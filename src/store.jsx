@@ -36,7 +36,10 @@ export function StoreProvider({ children }) {
     if (!client || !active) return
     setConnError(null)
     try {
-      if (active.username) {
+      // Reuse an existing SID cookie when possible — qBittorrent bans IPs that log in too often.
+      let haveSession = false
+      try { await client.version(); haveSession = true } catch { /* no valid session */ }
+      if (!haveSession && active.username) {
         const r = await client.login(active.username, active.password)
         if (r === 'Fails.') throw new Error('Login failed — check credentials')
       }

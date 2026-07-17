@@ -35,7 +35,7 @@ const PREF_FIELDS = [
 ]
 
 export default function Settings() {
-  const { theme, setTheme, client, connected, categories, tags } = useStore()
+  const { theme, setTheme, client, connected, categories, tags, servers, setServers, activeId, setActiveId } = useStore()
   const [version, setVersion] = useState(null)
   const [prefs, setPrefs] = useState(null)
   const [dirty, setDirty] = useState({})
@@ -62,6 +62,35 @@ export default function Settings() {
 
   const val = k => (k in dirty ? dirty[k] : prefs?.[k])
 
+  const exportConfig = () => {
+    const data = {
+      app: 'blackQbit', version: 1,
+      servers, activeServer: activeId, theme,
+      torrentPrefs: JSON.parse(localStorage.getItem('torrentPrefs') || 'null')
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'blackqbit-config.json'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+  const importConfig = async e => {
+    const file = e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      const data = JSON.parse(await file.text())
+      if (!Array.isArray(data.servers)) throw new Error('Not a blackQbit config file')
+      setServers(data.servers)
+      if (data.servers.some(s => s.id === data.activeServer)) setActiveId(data.activeServer)
+      if (data.theme === 'dark' || data.theme === 'light') setTheme(data.theme)
+      if (data.torrentPrefs) localStorage.setItem('torrentPrefs', JSON.stringify(data.torrentPrefs))
+      notify(true, `Imported ${data.servers.length} server(s) ✓`)
+    } catch (err) { notify(false, 'Import failed: ' + err.message) }
+  }
+
   return (
     <div className="form">
       <h2>Settings</h2>
@@ -71,6 +100,16 @@ export default function Settings() {
         <button className={'chip' + (theme === 'dark' ? ' on' : '')} onClick={() => setTheme('dark')}>Dark</button>
         <button className={'chip' + (theme === 'light' ? ' on' : '')} onClick={() => setTheme('light')}>Light</button>
       </div>
+
+      <h3>Backup</h3>
+      <div className="chiprow">
+        <button className="chip" onClick={exportConfig}>⬇ Export config</button>
+        <label className="chip" style={{ cursor: 'pointer' }}>
+          ⬆ Import config
+          <input type="file" accept=".json,application/json" onChange={importConfig} hidden />
+        </label>
+      </div>
+      <p className="hint">Exports servers (including passwords), theme, and torrent filter settings as JSON.</p>
 
       {connected && <>
         <h3>Categories</h3>

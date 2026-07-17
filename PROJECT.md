@@ -5,9 +5,8 @@ qBittorrent remote PWA (React + Vite). Mobile-first, bottom nav, dark default.
 ## Run / build
 
 - Build: `npm run build` → `dist/`
-- Serve (prod): `node server.js 5173` — serves `dist/` AND proxies API (required; vite preview breaks API calls). Not under systemd yet — dies on reboot.
-- Access: `http://100.82.111.41:5173` or `https://seedbox.goblin-krait.ts.net:8443/qbit/` (tailscale serve --set-path=/qbit → http://127.0.0.1:5173/qbit; blackAria2 is /aria2 on the same port). Node renames kill the ts.net hostname+cert — rerun `tailscale serve --bg --https=8443 --set-path=/qbit http://127.0.0.1:5173/qbit` after one.
-- After UI change: rebuild; server.js picks up dist automatically, no restart. Restart server.js only when server.js itself changes.
+- Primary distribution (2026-07): **Android APK via Capacitor** — `CAP_BUILD=1 npm run build && npx cap sync android`, then in `android/`: `JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64 ANDROID_HOME=~/android-sdk ./gradlew assembleDebug` (JDK 25 + Gradle 9.5.1 pinned, 1GB heap caps in gradle.properties — this 2GB box OOMs otherwise; free RAM first, dexing is the killer). CapacitorHttp patches fetch natively → no CORS, talks straight to qBittorrent; use the LE cert's domain, not the IP.
+- Web/PWA hosting (node server.js + tailscale serve) was retired 2026-07-18 — user wants client-only apps, no always-on servers, no tailscale dependency. server.js kept for dev/browser use: `node server.js 5173` serves dist + CORS/TLS proxy (/p/, /pi/; cookie paths get /qbit prefix when mounted under one).
 
 ## Architecture + why
 

@@ -26,7 +26,9 @@ const TABS = [
 ]
 
 function Shell() {
-  const [tab, setTab] = useState('torrents')
+  const [tab, setTabState] = useState(() =>
+    TABS.some(t => t.id === localStorage.getItem('tab')) ? localStorage.getItem('tab') : 'torrents')
+  const setTab = id => { localStorage.setItem('tab', id); setTabState(id) }
   const { active, connected, connError, connect, serverState } = useStore()
 
   const view = !active && tab !== 'servers' && tab !== 'settings'

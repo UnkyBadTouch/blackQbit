@@ -12,7 +12,14 @@ const TABS = [
   { id: 'torrents', label: 'Torrents', icon: '📥' },
   { id: 'add', label: 'Add', icon: '➕' },
   { id: 'search', label: 'Search', icon: '🔍' },
-  { id: 'rss', label: 'RSS', icon: '📡' },
+  { id: 'rss', label: 'RSS', icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <rect width="24" height="24" rx="5" fill="#f78422" />
+      <circle cx="6.5" cy="17.5" r="2.3" fill="#fff" />
+      <path d="M4 10.5a9.5 9.5 0 0 1 9.5 9.5h-3A6.5 6.5 0 0 0 4 13.5Z" fill="#fff" />
+      <path d="M4 4.5A15.5 15.5 0 0 1 19.5 20h-3A12.5 12.5 0 0 0 4 7.5Z" fill="#fff" />
+    </svg>
+  ) },
   { id: 'transfer', label: 'Transfer', icon: '📊' },
   { id: 'servers', label: 'Servers', icon: '🖥️' },
   { id: 'settings', label: 'Settings', icon: '⚙️' }

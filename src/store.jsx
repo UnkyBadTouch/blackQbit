@@ -51,6 +51,23 @@ export function StoreProvider({ children }) {
 
   useEffect(() => { setConnected(false); if (client) connect() }, [client])
 
+  // Reconnect automatically when the app comes back to the foreground.
+  const connectedRef = useRef(false)
+  connectedRef.current = connected
+  useEffect(() => {
+    const onWake = () => {
+      if (document.visibilityState === 'visible' && client && !connectedRef.current) connect()
+    }
+    document.addEventListener('visibilitychange', onWake)
+    window.addEventListener('online', onWake)
+    window.addEventListener('focus', onWake)
+    return () => {
+      document.removeEventListener('visibilitychange', onWake)
+      window.removeEventListener('online', onWake)
+      window.removeEventListener('focus', onWake)
+    }
+  }, [client, connect])
+
   // polling loop
   useEffect(() => {
     if (!connected || !client) return

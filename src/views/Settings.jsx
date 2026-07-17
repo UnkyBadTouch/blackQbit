@@ -25,6 +25,18 @@ export default function Settings() {
     URL.revokeObjectURL(a.href)
   }
 
+  const checkForUpdate = async () => {
+    notify(true, 'Checking for update…')
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration()
+      if (reg) {
+        await reg.update()
+        notify(true, reg.waiting || reg.installing ? 'Update found — reloading' : 'Up to date — reloading')
+      }
+    } catch {}
+    setTimeout(() => location.reload(), 500)
+  }
+
   const importConfig = async e => {
     const file = e.target.files[0]
     e.target.value = ''
@@ -66,6 +78,11 @@ export default function Settings() {
       </>}
 
       {toast && <div className={'toast ' + (toast.ok ? 'ok' : 'error')}>{toast.text}</div>}
+
+      <h3>App</h3>
+      <div className="chiprow">
+        <button className="chip" onClick={checkForUpdate}>⟳ Check for update</button>
+      </div>
 
       <p className="hint">blackqbit · installable PWA — use your browser's "Add to Home Screen".</p>
     </div>

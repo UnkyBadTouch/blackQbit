@@ -33,7 +33,11 @@ http.createServer(async (req, res) => {
       res.writeHead(upRes.statusCode, h)
       upRes.pipe(res)
     })
-    up.on('error', e => { res.writeHead(502); res.end('upstream error: ' + e.message) })
+    up.on('error', e => {
+      console.error(`[proxy] ${req.method} ${target.href} -> ${e.message}`)
+      res.writeHead(502)
+      res.end('upstream error: ' + e.message)
+    })
     req.pipe(up)
     return
   }

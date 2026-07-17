@@ -30,7 +30,7 @@ export function StoreProvider({ children }) {
   }, [theme])
 
   const active = servers.find(s => s.id === activeId) || null
-  const client = useMemo(() => active ? new QbitClient(active.url, { insecure: active.insecure }) : null, [activeId, servers])
+  const client = useMemo(() => active ? new QbitClient(active.url, { insecure: active.insecure, timeout: active.timeout }) : null, [activeId, servers])
 
   const connect = useCallback(async () => {
     if (!client || !active) return

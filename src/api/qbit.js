@@ -1,6 +1,7 @@
 // Full qBittorrent WebUI API v2 client. Cookie auth (SID), form-encoded requests.
 export class QbitClient {
-  constructor(baseUrl, { insecure = false } = {}) {
+  constructor(baseUrl, { insecure = false, timeout = 30 } = {}) {
+    this.timeout = (Number(timeout) || 30) * 1000
     const base = baseUrl.replace(/\/+$/, '')
     // Cross-origin servers are routed through our same-origin proxy (server.js) to avoid CORS.
     // /pi/ = proxy with TLS certificate verification disabled.
@@ -14,19 +15,29 @@ export class QbitClient {
 
   async req(path, params, opts = {}) {
     const url = `${this.base}/api/v2${path}`
+    const ctl = new AbortController()
+    const timer = setTimeout(() => ctl.abort(), this.timeout)
     let res
-    if (opts.method === 'GET' || !params) {
-      const qs = params ? '?' + new URLSearchParams(params) : ''
-      res = await fetch(url + qs, { credentials: 'include' })
-    } else if (params instanceof FormData) {
-      res = await fetch(url, { method: 'POST', body: params, credentials: 'include' })
-    } else {
-      res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(params),
-        credentials: 'include'
-      })
+    try {
+      if (opts.method === 'GET' || !params) {
+        const qs = params ? '?' + new URLSearchParams(params) : ''
+        res = await fetch(url + qs, { credentials: 'include', signal: ctl.signal })
+      } else if (params instanceof FormData) {
+        res = await fetch(url, { method: 'POST', body: params, credentials: 'include', signal: ctl.signal })
+      } else {
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(params),
+          credentials: 'include',
+          signal: ctl.signal
+        })
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') throw new Error(`Request timed out (${this.timeout / 1000}s)`)
+      throw e
+    } finally {
+      clearTimeout(timer)
     }
     if (res.status === 403) throw new Error('Forbidden — session expired or IP banned')
     if (!res.ok) throw new Error(`${path}: HTTP ${res.status} ${await res.text()}`)

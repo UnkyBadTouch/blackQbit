@@ -15,13 +15,9 @@ export default function Servers() {
     setTesting(true)
     setToast(null)
     const { QbitClient } = await import('../api/qbit.js')
-    const c = new QbitClient(editing.url, { insecure: editing.insecure })
-    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Connection timed out (10s)')), 10000))
+    const c = new QbitClient(editing.url, { insecure: editing.insecure, timeout: editing.timeout })
     try {
-      const r = await Promise.race([
-        editing.username ? c.login(editing.username, editing.password) : c.version(),
-        timeout
-      ])
+      const r = await (editing.username ? c.login(editing.username, editing.password) : c.version())
       if (r === 'Fails.') throw new Error('Server reached, but login failed — check credentials')
       setToast({ ok: true, text: 'Connection OK ✓' })
     } catch (e) {
@@ -56,6 +52,7 @@ export default function Servers() {
       <label>Name<input required value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} placeholder="Home NAS" /></label>
       <label>URL<input required type="url" value={editing.url} onChange={e => setEditing({ ...editing, url: e.target.value })} placeholder="http://192.168.1.10:8080" /></label>
       <label>Username<input value={editing.username} onChange={e => setEditing({ ...editing, username: e.target.value })} placeholder="blank if auth bypassed" /></label>
+      <label>Request timeout (seconds)<input type="number" min="5" max="300" value={editing.timeout ?? 30} onChange={e => setEditing({ ...editing, timeout: Number(e.target.value) })} /></label>
       <label>Password
         <div className="pwrow">
           <input type={showPw ? 'text' : 'password'} value={editing.password} onChange={e => setEditing({ ...editing, password: e.target.value })} />

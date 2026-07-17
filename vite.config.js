@@ -8,6 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
+        id: 'blackqbit',
         name: 'blackQbit',
         short_name: 'blackQbit',
         description: 'qBittorrent remote',

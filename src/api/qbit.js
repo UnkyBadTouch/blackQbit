@@ -3,9 +3,12 @@ export class QbitClient {
   constructor(baseUrl, { insecure = false, timeout = 5 } = {}) {
     this.timeout = (Number(timeout) || 5) * 1000
     const base = baseUrl.replace(/\/+$/, '')
-    // Cross-origin servers are routed through our same-origin proxy (server.js) to avoid CORS.
+    // Native APK (CapacitorHttp) has no CORS — talk to the server directly.
+    // In the browser, cross-origin servers are routed through our same-origin proxy (server.js) to avoid CORS.
     // /pi/ = proxy with TLS certificate verification disabled.
-    if (typeof location !== 'undefined' && /^https?:/.test(base) && new URL(base).origin !== location.origin) {
+    if (globalThis.Capacitor?.isNativePlatform?.()) {
+      this.base = base
+    } else if (typeof location !== 'undefined' && /^https?:/.test(base) && new URL(base).origin !== location.origin) {
       const b64 = btoa(base).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
       this.base = import.meta.env.BASE_URL + (insecure ? 'pi/' : 'p/') + b64
     } else {

@@ -50,7 +50,8 @@ http.createServer(async (req, res) => {
   if (path === '/') path = '/index.html'
   try {
     const data = await readFile(join(DIST, path))
-    res.writeHead(200, { 'Content-Type': MIME[extname(path)] || 'application/octet-stream' })
+    const h = { 'Content-Type': MIME[extname(path)] || 'application/octet-stream' }
+    res.writeHead(200, h)
     res.end(data)
   } catch {
     const data = await readFile(join(DIST, 'index.html'))

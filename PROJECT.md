@@ -6,7 +6,7 @@ qBittorrent remote PWA (React + Vite). Mobile-first, bottom nav, dark default.
 
 - Build: `npm run build` → `dist/`
 - Serve (prod): `node server.js 5173` — serves `dist/` AND proxies API (required; vite preview breaks API calls)
-- Access: `http://100.82.111.41:5173` or `https://alpha-486a88b43e.goblin-krait.ts.net:8443` (tailscale serve --https=8443; port 443 is taken by an Apache on this box that redirects to google)
+- Access: `http://100.82.111.41:5173` or `https://seedbox.goblin-krait.ts.net:8443` (tailscale serve --https=8443; port 443 is taken by an Apache on this box that redirects to google)
 - After UI change: rebuild; server.js picks up dist automatically, no restart. Restart server.js only when server.js itself changes.
 
 ## Architecture + why

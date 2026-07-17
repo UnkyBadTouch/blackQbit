@@ -11,8 +11,8 @@ export default defineConfig({
         name: 'blackQbit',
         short_name: 'blackQbit',
         description: 'qBittorrent remote',
-        theme_color: '#0f1115',
-        background_color: '#0f1115',
+        theme_color: '#0a0e16',
+        background_color: '#0a0e16',
         display: 'standalone',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },

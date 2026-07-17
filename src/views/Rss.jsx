@@ -46,7 +46,7 @@ function RuleForm({ rule, name, feeds, onSave, onCancel }) {
     affectedFeeds: rule.affectedFeeds || [],
     category: tp.category ?? rule.assignedCategory ?? '',
     save_path: tp.save_path ?? rule.savePath ?? '',
-    tags: (tp.tags || []).join(', '),
+    tags: tp.tags || [],
     stopped: tp.stopped ?? rule.addPaused ?? false
   })
   const set = (k, v) => setR(prev => ({ ...prev, [k]: v }))
@@ -64,7 +64,7 @@ function RuleForm({ rule, name, feeds, onSave, onCancel }) {
       torrentParams: {
         category: r.category,
         save_path: r.save_path,
-        tags: r.tags.split(',').map(t => t.trim()).filter(Boolean),
+        tags: r.tags,
         stopped: r.stopped
       }
     })
@@ -100,8 +100,15 @@ function RuleForm({ rule, name, feeds, onSave, onCancel }) {
           {Object.keys(categories).map(c => <option key={c}>{c}</option>)}
         </select>
       </label>
-      <label>Tags (comma separated)<input value={r.tags} onChange={e => set('tags', e.target.value)} list="taglist" /></label>
-      <datalist id="taglist">{tags.map(t => <option key={t}>{t}</option>)}</datalist>
+      <label>Tags
+        <div className="chiprow">
+          {tags.length === 0 && <span className="hint">No tags exist — create some in Settings.</span>}
+          {tags.map(t => (
+            <button type="button" key={t} className={'chip' + (r.tags.includes(t) ? ' on' : '')}
+              onClick={() => set('tags', r.tags.includes(t) ? r.tags.filter(x => x !== t) : [...r.tags, t])}>{t}</button>
+          ))}
+        </div>
+      </label>
       <label>Save path<input value={r.save_path} onChange={e => set('save_path', e.target.value)} placeholder="default" /></label>
       <label className="row"><input type="checkbox" checked={r.stopped} onChange={e => set('stopped', e.target.checked)} /> Add stopped (paused)</label>
       <div className="chiprow">

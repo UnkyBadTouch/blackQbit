@@ -14,6 +14,7 @@ const MIME = {
 
 http.createServer(async (req, res) => {
   // Served under /qbit when mounted on a shared port; accept both prefixed and bare paths.
+  const prefix = /^\/qbit(\/|$)/.test(req.url) ? '/qbit' : ''
   req.url = req.url.replace(/^\/qbit(\/|$)/, '/')
   const m = req.url.match(/^\/(p|pi)\/([A-Za-z0-9_-]+)(\/.*)$/)
   if (m) {
@@ -31,7 +32,7 @@ http.createServer(async (req, res) => {
       const h = { ...upRes.headers }
       // Rescope cookie to this server's proxy path; drop Secure so it survives when the app itself is served over HTTP.
       if (h['set-cookie']) h['set-cookie'] = h['set-cookie'].map(c =>
-        c.replace(/;\s*[Pp]ath=[^;]*/, `; Path=/${kind}/${b64}`).replace(/;\s*[Ss]ecure/g, ''))
+        c.replace(/;\s*[Pp]ath=[^;]*/, `; Path=${prefix}/${kind}/${b64}`).replace(/;\s*[Ss]ecure/g, ''))
       res.writeHead(upRes.statusCode, h)
       upRes.pipe(res)
     })

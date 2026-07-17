@@ -1,7 +1,7 @@
 // Full qBittorrent WebUI API v2 client. Cookie auth (SID), form-encoded requests.
 export class QbitClient {
-  constructor(baseUrl, { insecure = false, timeout = 30 } = {}) {
-    this.timeout = (Number(timeout) || 30) * 1000
+  constructor(baseUrl, { insecure = false, timeout = 5 } = {}) {
+    this.timeout = (Number(timeout) || 5) * 1000
     const base = baseUrl.replace(/\/+$/, '')
     // Cross-origin servers are routed through our same-origin proxy (server.js) to avoid CORS.
     // /pi/ = proxy with TLS certificate verification disabled.

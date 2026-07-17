@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { StoreProvider, useStore } from './store.jsx'
+import { StoreProvider, useStore, fmtSpeed } from './store.jsx'
 import Torrents from './views/Torrents.jsx'
 import AddTorrent from './views/AddTorrent.jsx'
 import Transfer from './views/Transfer.jsx'
@@ -27,7 +27,7 @@ const TABS = [
 
 function Shell() {
   const [tab, setTab] = useState('torrents')
-  const { active, connected, connError, connect } = useStore()
+  const { active, connected, connError, connect, serverState } = useStore()
 
   const view = !active && tab !== 'servers' && tab !== 'settings'
     ? <Servers />
@@ -35,6 +35,19 @@ function Shell() {
 
   return (
     <div className="shell">
+      <header className="topbar">
+        <span className="wordmark">black<b>Q</b>bit</span>
+        {active && (
+          <span className="topstatus">
+            <span className={'dot' + (connected ? ' live' : '')} />
+            {active.name}
+            {connected && <>
+              <span className="spd dl">↓ {fmtSpeed(serverState.dl_info_speed)}</span>
+              <span className="spd ul">↑ {fmtSpeed(serverState.up_info_speed)}</span>
+            </>}
+          </span>
+        )}
+      </header>
       {active && !connected && connError && (
         <div className="banner error">
           {connError} <button onClick={connect}>Retry</button>

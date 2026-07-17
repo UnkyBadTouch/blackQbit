@@ -6,7 +6,7 @@ qBittorrent remote PWA (React + Vite). Mobile-first, bottom nav, dark default.
 
 - Build: `npm run build` → `dist/`
 - Serve (prod): `node server.js 5173` — serves `dist/` AND proxies API (required; vite preview breaks API calls). Not under systemd yet — dies on reboot.
-- Access: `http://100.82.111.41:5173` or `https://seedbox.goblin-krait.ts.net:8443` (tailscale serve --https=8443; port 443 is taken by an Apache on this box that redirects to google). Node renames kill the ts.net hostname+cert — rerun `tailscale serve --bg --https=8443 5173` after one.
+- Access: `http://100.82.111.41:5173` or `https://seedbox.goblin-krait.ts.net:8443` (tailscale serve --https=8443; port 443 fronts aria2, port 10000 fronts blackAria2). Node renames kill the ts.net hostname+cert — rerun `tailscale serve --bg --https=8443 5173` after one.
 - After UI change: rebuild; server.js picks up dist automatically, no restart. Restart server.js only when server.js itself changes.
 
 ## Architecture + why

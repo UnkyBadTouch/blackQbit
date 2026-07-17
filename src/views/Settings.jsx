@@ -5,7 +5,17 @@ export default function Settings() {
   const { theme, setTheme, client, connected, categories, tags, servers, setServers, activeId, setActiveId } = useStore()
   const [version, setVersion] = useState(null)
   const [toast, setToast] = useState(null)
+  const [editCat, setEditCat] = useState(null)
+  const [catPath, setCatPath] = useState('')
+  const [newCat, setNewCat] = useState('')
+  const [newCatPath, setNewCatPath] = useState('')
+  const [newTag, setNewTag] = useState('')
+  const [confirmDel, setConfirmDel] = useState(null)
   const notify = (ok, text) => { setToast({ ok, text }); setTimeout(() => setToast(null), 5000) }
+  const run = async fn => {
+    try { await fn() } catch (e) { notify(false, e.message) }
+    setConfirmDel(null)
+  }
 
   useEffect(() => {
     if (connected && client) client.version().then(setVersion).catch(() => {})
@@ -62,31 +72,48 @@ export default function Settings() {
 
       {connected && <>
         <h3>Categories</h3>
-        <div className="chiprow">
-          {Object.entries(categories).map(([name, c]) => (
-            <button key={name} className="chip" onClick={async () => {
-              if (confirm(`Delete category "${name}"?`)) await client.removeCategories(name)
-            }}>{name} ✕</button>
-          ))}
-          <button className="chip on" onClick={async () => {
-            const name = prompt('New category name:')
-            if (!name) return
-            const path = prompt('Save path (optional):') || ''
-            await client.createCategory(name, path)
-          }}>＋ New</button>
+        {Object.entries(categories).map(([name, c]) => (
+          <div key={name} className="serverrow">
+            <div onClick={() => { setEditCat(editCat === name ? null : name); setCatPath(c.savePath || '') }}>
+              <div className="tname">{name}</div>
+              <div className="tmeta"><span className="mono">{c.savePath || 'default path'}</span></div>
+            </div>
+            {confirmDel === 'cat:' + name
+              ? <button className="danger" onClick={async () => { await run(() => client.removeCategories(name)) }}>Confirm?</button>
+              : <button className="danger" onClick={() => setConfirmDel('cat:' + name)}>✕</button>}
+          </div>
+        ))}
+        {editCat && (
+          <div className="pwrow">
+            <input value={catPath} onChange={e => setCatPath(e.target.value)} placeholder={`Save path for "${editCat}"`} />
+            <button className="primary" onClick={async () => {
+              await run(() => client.editCategory(editCat, catPath)); setEditCat(null)
+            }}>Save</button>
+          </div>
+        )}
+        <div className="pwrow">
+          <input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="New category name" />
+          <input value={newCatPath} onChange={e => setNewCatPath(e.target.value)} placeholder="Save path (optional)" />
+          <button className="primary" disabled={!newCat.trim()} onClick={async () => {
+            await run(() => client.createCategory(newCat.trim(), newCatPath.trim()))
+            setNewCat(''); setNewCatPath('')
+          }}>＋</button>
         </div>
 
         <h3>Tags</h3>
         <div className="chiprow">
+          {tags.length === 0 && <span className="hint">No tags.</span>}
           {tags.map(t => (
-            <button key={t} className="chip" onClick={async () => {
-              if (confirm(`Delete tag "${t}"?`)) await client.deleteTags(t)
-            }}>{t} ✕</button>
+            confirmDel === 'tag:' + t
+              ? <button key={t} className="chip danger" onClick={async () => { await run(() => client.deleteTags(t)) }}>Delete "{t}"?</button>
+              : <button key={t} className="chip" onClick={() => setConfirmDel('tag:' + t)}>{t} ✕</button>
           ))}
-          <button className="chip on" onClick={async () => {
-            const t = prompt('New tag(s), comma separated:')
-            if (t) await client.createTags(t)
-          }}>＋ New</button>
+        </div>
+        <div className="pwrow">
+          <input value={newTag} onChange={e => setNewTag(e.target.value)} placeholder="New tag" />
+          <button className="primary" disabled={!newTag.trim()} onClick={async () => {
+            await run(() => client.createTags(newTag.trim())); setNewTag('')
+          }}>＋</button>
         </div>
 
         <h3>Server</h3>

@@ -75,9 +75,9 @@ function RuleForm({ rule, name, feeds, onSave, onCancel }) {
       <h3>{name ? `Edit rule: ${name}` : 'New rule'}</h3>
       {!name && <label>Rule name<input required value={r.name} onChange={e => set('name', e.target.value)} /></label>}
       <label className="row"><input type="checkbox" checked={r.enabled} onChange={e => set('enabled', e.target.checked)} /> Enabled</label>
+      <label className="row"><input type="checkbox" checked={r.useRegex} onChange={e => set('useRegex', e.target.checked)} /> Use regex</label>
       <label>Must contain<input value={r.mustContain} onChange={e => set('mustContain', e.target.value)} placeholder="1080p" /></label>
       <label>Must not contain<input value={r.mustNotContain} onChange={e => set('mustNotContain', e.target.value)} /></label>
-      <label className="row"><input type="checkbox" checked={r.useRegex} onChange={e => set('useRegex', e.target.checked)} /> Use regex</label>
       <label>Episode filter<input value={r.episodeFilter} onChange={e => set('episodeFilter', e.target.value)} placeholder="1x01-;" /></label>
       <label className="row"><input type="checkbox" checked={r.smartFilter} onChange={e => set('smartFilter', e.target.checked)} /> Smart episode filter</label>
       <label>Apply to feeds

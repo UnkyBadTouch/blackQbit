@@ -108,13 +108,15 @@ export function StoreProvider({ children }) {
         }
         setLoaded(true)
       } catch (e) {
-        if (!stop) { setConnected(false); setConnError(e.message) }
+        // Session expired (qBittorrent 403s after restart/timeout): try one reconnect,
+        // which re-logins and restarts this loop on success.
+        if (!stop) { setConnected(false); setConnError(e.message); connect() }
       }
     }
     tick()
     const iv = setInterval(tick, 2000)
     return () => { stop = true; clearInterval(iv) }
-  }, [connected, client])
+  }, [connected, client, connect])
 
   const value = {
     servers, setServers, activeId, setActiveId, active, client,

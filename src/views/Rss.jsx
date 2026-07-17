@@ -35,7 +35,13 @@ function Tree({ node, path, depth, onSelect, selected, onAction }) {
 function RuleForm({ rule, name, feeds, onSave, onCancel }) {
   const { categories, tags } = useStore()
   const tp = rule.torrentParams || {}
-  const [r, setR] = useState({
+  const draft = (() => {
+    try {
+      const d = JSON.parse(localStorage.getItem('rssRuleDraft'))
+      return d && d.forName === (name || '') ? d.r : null
+    } catch { return null }
+  })()
+  const [r, setR] = useState(draft || {
     name,
     enabled: rule.enabled ?? true,
     mustContain: rule.mustContain || '',
@@ -49,7 +55,11 @@ function RuleForm({ rule, name, feeds, onSave, onCancel }) {
     tags: tp.tags || [],
     stopped: tp.stopped ?? rule.addPaused ?? false
   })
-  const set = (k, v) => setR(prev => ({ ...prev, [k]: v }))
+  const set = (k, v) => setR(prev => {
+    const next = { ...prev, [k]: v }
+    localStorage.setItem('rssRuleDraft', JSON.stringify({ forName: name || '', r: next }))
+    return next
+  })
 
   const submit = e => {
     e.preventDefault()
@@ -123,10 +133,19 @@ export default function Rss() {
   const { client, connected } = useStore()
   const [items, setItems] = useState({})
   const [rules, setRules] = useState({})
-  const [view, setView] = useState('feeds') // feeds | rules
+  const [view, setViewState] = useState(() => localStorage.getItem('rssView') === 'rules' ? 'rules' : 'feeds')
+  const setView = v => { localStorage.setItem('rssView', v); setViewState(v) }
   const [selected, setSelected] = useState(null) // path of selected feed
   const [selectedFeed, setSelectedFeed] = useState(null)
-  const [editingRule, setEditingRule] = useState(null) // {name, rule}
+  // {name, rule} — persisted so a refresh returns to the open rule editor
+  const [editingRule, setEditingRuleState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rssEditingRule')) } catch { return null }
+  })
+  const setEditingRule = er => {
+    if (er) localStorage.setItem('rssEditingRule', JSON.stringify(er))
+    else { localStorage.removeItem('rssEditingRule'); localStorage.removeItem('rssRuleDraft') }
+    setEditingRuleState(er)
+  }
   const [toast, setToast] = useState(null)
   // sheet: {type:'item', path, feed} | {type:'addFeed'} | {type:'addFolder'} | null
   const [sheet, setSheet] = useState(null)

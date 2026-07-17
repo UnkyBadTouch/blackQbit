@@ -1,0 +1,119 @@
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { QbitClient } from './api/qbit.js'
+
+const Ctx = createContext(null)
+export const useStore = () => useContext(Ctx)
+
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } }
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v))
+
+export function StoreProvider({ children }) {
+  const [servers, setServers] = useState(() => load('servers', []))
+  const [activeId, setActiveId] = useState(() => load('activeServer', null))
+  const [theme, setTheme] = useState(() => load('theme', 'dark'))
+  const [connected, setConnected] = useState(false)
+  const [connError, setConnError] = useState(null)
+
+  // sync/maindata state
+  const [torrents, setTorrents] = useState({})
+  const [categories, setCategories] = useState({})
+  const [tags, setTags] = useState([])
+  const [serverState, setServerState] = useState({})
+  const [loaded, setLoaded] = useState(false) // first maindata received
+  const ridRef = useRef(0)
+
+  useEffect(() => { save('servers', servers) }, [servers])
+  useEffect(() => { save('activeServer', activeId) }, [activeId])
+  useEffect(() => {
+    save('theme', theme)
+    document.documentElement.dataset.theme = theme
+  }, [theme])
+
+  const active = servers.find(s => s.id === activeId) || null
+  const client = useMemo(() => active ? new QbitClient(active.url, { insecure: active.insecure }) : null, [activeId, servers])
+
+  const connect = useCallback(async () => {
+    if (!client || !active) return
+    setConnError(null)
+    try {
+      if (active.username) {
+        const r = await client.login(active.username, active.password)
+        if (r === 'Fails.') throw new Error('Login failed — check credentials')
+      }
+      ridRef.current = 0
+      setTorrents({}); setCategories({}); setTags([]); setServerState({}); setLoaded(false)
+      setConnected(true)
+    } catch (e) {
+      setConnected(false)
+      setConnError(e.message)
+    }
+  }, [client, activeId])
+
+  useEffect(() => { setConnected(false); if (client) connect() }, [client])
+
+  // polling loop
+  useEffect(() => {
+    if (!connected || !client) return
+    let stop = false
+    const tick = async () => {
+      try {
+        const d = await client.syncMaindata(ridRef.current)
+        if (stop) return
+        ridRef.current = d.rid
+        if (d.full_update) {
+          setTorrents(d.torrents || {})
+          setCategories(d.categories || {})
+          setTags(d.tags || [])
+          setServerState(d.server_state || {})
+        } else {
+          if (d.torrents || d.torrents_removed) setTorrents(prev => {
+            const next = { ...prev }
+            for (const h of d.torrents_removed || []) delete next[h]
+            for (const [h, t] of Object.entries(d.torrents || {})) next[h] = { ...next[h], ...t }
+            return next
+          })
+          if (d.categories || d.categories_removed) setCategories(prev => {
+            const next = { ...prev }
+            for (const c of d.categories_removed || []) delete next[c]
+            Object.assign(next, d.categories || {})
+            return next
+          })
+          if (d.tags || d.tags_removed) setTags(prev => {
+            const s = new Set(prev)
+            for (const t of d.tags_removed || []) s.delete(t)
+            for (const t of d.tags || []) s.add(t)
+            return [...s]
+          })
+          if (d.server_state) setServerState(prev => ({ ...prev, ...d.server_state }))
+        }
+        setLoaded(true)
+      } catch (e) {
+        if (!stop) { setConnected(false); setConnError(e.message) }
+      }
+    }
+    tick()
+    const iv = setInterval(tick, 2000)
+    return () => { stop = true; clearInterval(iv) }
+  }, [connected, client])
+
+  const value = {
+    servers, setServers, activeId, setActiveId, active, client,
+    connected, connError, connect,
+    theme, setTheme,
+    torrents, categories, tags, serverState, loaded
+  }
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
+}
+
+export const fmtBytes = (b = 0) => {
+  if (!b || b < 0) return '0 B'
+  const u = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
+  const i = Math.min(u.length - 1, Math.floor(Math.log2(b) / 10))
+  return `${(b / 2 ** (10 * i)).toFixed(i ? 1 : 0)} ${u[i]}`
+}
+export const fmtSpeed = b => fmtBytes(b) + '/s'
+export const fmtEta = s => {
+  if (s >= 8640000 || s < 0) return '∞'
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
+  return h > 48 ? `${Math.floor(h / 24)}d` : h ? `${h}h ${m}m` : `${m}m ${s % 60}s`
+}

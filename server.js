@@ -13,6 +13,8 @@ const MIME = {
 }
 
 http.createServer(async (req, res) => {
+  // Served under /qbit when mounted on a shared port; accept both prefixed and bare paths.
+  req.url = req.url.replace(/^\/qbit(\/|$)/, '/')
   const m = req.url.match(/^\/(p|pi)\/([A-Za-z0-9_-]+)(\/.*)$/)
   if (m) {
     const [, kind, b64, rest] = m

@@ -3,12 +3,15 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  base: '/qbit/',
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
         id: 'blackqbit',
+        start_url: '/qbit/',
+        scope: '/qbit/',
         name: 'blackQbit',
         short_name: 'blackQbit',
         description: 'qBittorrent remote',

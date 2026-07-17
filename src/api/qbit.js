@@ -7,7 +7,7 @@ export class QbitClient {
     // /pi/ = proxy with TLS certificate verification disabled.
     if (typeof location !== 'undefined' && /^https?:/.test(base) && new URL(base).origin !== location.origin) {
       const b64 = btoa(base).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-      this.base = (insecure ? '/pi/' : '/p/') + b64
+      this.base = import.meta.env.BASE_URL + (insecure ? 'pi/' : 'p/') + b64
     } else {
       this.base = base
     }

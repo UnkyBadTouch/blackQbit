@@ -1,3 +1,5 @@
+import { CapacitorCookies } from '@capacitor/core'
+
 // Full qBittorrent WebUI API v2 client. Cookie auth (SID), form-encoded requests.
 export class QbitClient {
   constructor(baseUrl, { insecure = false, timeout = 5 } = {}) {
@@ -61,7 +63,19 @@ export class QbitClient {
   post(path, params) { return this.req(path, params || {}) }
 
   // ---- Authentication ----
-  login(username, password) { return this.post('/auth/login', { username, password }) }
+  async login(username, password) {
+    const r = await this.post('/auth/login', { username, password })
+    // Native: the SID cookie lands in the native jar but CapacitorHttp doesn't reliably
+    // replay it, and set-cookie may be filtered from fetch responses — read the jar directly.
+    if (this.native && !this.sid) {
+      try {
+        const jar = await CapacitorCookies.getCookies({ url: this.base })
+        const sid = jar?.SID || jar?.cookies?.SID
+        if (sid) this.sid = sid
+      } catch { /* jar unavailable — header capture in req() is the only hope */ }
+    }
+    return r
+  }
   logout() { return this.post('/auth/logout') }
 
   // ---- Application ----

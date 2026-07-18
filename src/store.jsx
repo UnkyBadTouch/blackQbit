@@ -44,7 +44,9 @@ export function StoreProvider({ children }) {
         if (r === 'Fails.') throw new Error('Login failed — check credentials')
         // Confirm the session cookie actually took before declaring connected,
         // otherwise a cookie problem turns into an endless connect/fail loop.
-        await client.version().catch(() => { throw new Error('Logged in but session not accepted — cookie problem') })
+        await client.version().catch((e) => {
+          throw new Error(`Logged in but session not accepted (SID ${client.sid ? 'captured' : 'NOT captured'}; ${e.message})`)
+        })
       }
       ridRef.current = 0
       setTorrents({}); setCategories({}); setTags([]); setServerState({}); setLoaded(false)

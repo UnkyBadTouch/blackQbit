@@ -15,6 +15,9 @@ export function StoreProvider({ children }) {
   const [connError, setConnError] = useState(null)
 
   // sync/maindata state
+  const [debugLog, setDebugLog] = useState([])
+  const logDbg = (msg) => setDebugLog((l) => [...l.slice(-19), `${new Date().toTimeString().slice(0, 8)} ${msg}`])
+
   const [torrents, setTorrents] = useState({})
   const [categories, setCategories] = useState({})
   const [tags, setTags] = useState([])
@@ -38,15 +41,17 @@ export function StoreProvider({ children }) {
     try {
       // Reuse an existing SID cookie when possible — qBittorrent bans IPs that log in too often.
       let haveSession = false
-      try { await client.version(); haveSession = true } catch { /* no valid session */ }
+      try { await client.version(); haveSession = true; logDbg('probe ok (existing session)') } catch (e) { logDbg('probe fail: ' + e.message) }
       if (!haveSession && active.username) {
         const r = await client.login(active.username, active.password)
         if (r === 'Fails.') throw new Error('Login failed — check credentials')
+        logDbg('login ok; cookie: ' + (client.cookie ? client.cookie.slice(0, 24) + '…' : 'NONE'))
         // Confirm the session cookie actually took before declaring connected,
         // otherwise a cookie problem turns into an endless connect/fail loop.
         await client.version().catch((e) => {
           throw new Error(`Logged in but session not accepted (cookie ${client.cookie ? 'captured' : 'NOT captured'}; ${e.message})`)
         })
+        logDbg('post-login verify ok')
       }
       ridRef.current = 0
       setTorrents({}); setCategories({}); setTags([]); setServerState({}); setLoaded(false)
@@ -115,7 +120,7 @@ export function StoreProvider({ children }) {
       } catch (e) {
         // Session expired (qBittorrent 403s after restart/timeout): reconnect after a
         // short delay — immediate retries flap forever when the session never sticks.
-        if (!stop) { setConnected(false); setConnError(e.message); setTimeout(connect, 3000) }
+        if (!stop) { logDbg('sync fail: ' + e.message); setConnected(false); setConnError(e.message); setTimeout(connect, 3000) }
       }
     }
     tick()
@@ -127,7 +132,7 @@ export function StoreProvider({ children }) {
     servers, setServers, activeId, setActiveId, active, client,
     connected, connError, connect,
     theme, setTheme,
-    torrents, categories, tags, serverState, loaded
+    torrents, categories, tags, serverState, loaded, debugLog
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

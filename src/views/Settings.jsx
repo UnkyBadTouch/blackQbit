@@ -64,7 +64,7 @@ function CookieManager({ client, notify }) {
 }
 
 export default function Settings() {
-  const { theme, setTheme, client, connected, servers, setServers, activeId, setActiveId } = useStore()
+  const { theme, setTheme, client, connected, servers, setServers, activeId, setActiveId, debugLog } = useStore()
   const [version, setVersion] = useState(null)
   const [toast, setToast] = useState(null)
   const notify = (ok, text) => { setToast({ ok, text }); setTimeout(() => setToast(null), 5000) }
@@ -128,6 +128,11 @@ export default function Settings() {
       </>}
 
       {connected && <CookieManager client={client} notify={notify} />}
+
+      {debugLog.length > 0 && <>
+        <h3>Connection log</h3>
+        <div className="mono" style={{ whiteSpace: 'pre-wrap' }}>{debugLog.join('\n')}</div>
+      </>}
 
       {toast && <div className={'toast ' + (toast.ok ? 'ok' : 'error')}>{toast.text}</div>}
     </div>

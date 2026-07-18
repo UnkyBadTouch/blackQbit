@@ -57,6 +57,8 @@ export class QbitClient {
 
   // ---- Application ----
   version() { return this.get('/app/version') }
+  cookies() { return this.get('/app/cookies') }
+  setCookies(list) { return this.post('/app/setCookies', { cookies: JSON.stringify(list) }) }
   webapiVersion() { return this.get('/app/webapiVersion') }
   buildInfo() { return this.get('/app/buildInfo') }
   shutdown() { return this.post('/app/shutdown') }

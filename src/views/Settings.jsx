@@ -1,6 +1,68 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from '../store.jsx'
 
+// qBittorrent's global cookie jar (/app/cookies) — used when fetching .torrent files
+// and RSS feeds from sites that need a login cookie.
+function CookieManager({ client, notify }) {
+  const [cookies, setCookies] = useState(null)
+  const [draft, setDraft] = useState(null) // {domain,path,name,value}
+
+  const load = () => client.cookies().then(setCookies).catch(e => {
+    setCookies([])
+    notify(false, 'Cookies need qBittorrent ≥ 5.1: ' + e.message)
+  })
+  useEffect(() => { load() }, [client])
+
+  const save = async (list) => {
+    try {
+      await client.setCookies(list)
+      setCookies(list)
+      notify(true, 'Cookies saved ✓')
+    } catch (e) { notify(false, 'Save failed: ' + e.message) }
+  }
+
+  const add = e => {
+    e.preventDefault()
+    const year = Math.floor(Date.now() / 1000) + 31536000
+    save([...cookies, { ...draft, path: draft.path || '/', expirationDate: year }])
+    setDraft(null)
+  }
+
+  return (
+    <>
+      <h3>Cookies</h3>
+      <p className="hint">Sent by qBittorrent when it downloads .torrent files or RSS feeds from these domains.</p>
+      {cookies === null && <p className="hint">Loading…</p>}
+      {cookies?.map((c, i) => (
+        <div className="serverrow" key={i}>
+          <div>
+            <div>{c.name} <span className="hint">@ {c.domain}{c.path}</span></div>
+            <div className="mono">{c.value.length > 40 ? c.value.slice(0, 40) + '…' : c.value}</div>
+          </div>
+          <button className="chip danger" onClick={() => save(cookies.filter((_, j) => j !== i))}>Delete</button>
+        </div>
+      ))}
+      {cookies?.length === 0 && <p className="hint">No cookies stored.</p>}
+      {draft ? (
+        <form onSubmit={add} className="picker">
+          <label>Domain<input required placeholder="tracker.example.org" value={draft.domain} onChange={e => setDraft({ ...draft, domain: e.target.value })} /></label>
+          <label>Path<input placeholder="/" value={draft.path} onChange={e => setDraft({ ...draft, path: e.target.value })} /></label>
+          <label>Name<input required placeholder="session_id" value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
+          <label>Value<input required value={draft.value} onChange={e => setDraft({ ...draft, value: e.target.value })} /></label>
+          <div className="chiprow">
+            <button className="chip on" type="submit">Add cookie</button>
+            <button className="chip" type="button" onClick={() => setDraft(null)}>Cancel</button>
+          </div>
+        </form>
+      ) : (
+        <div className="chiprow">
+          <button className="chip" onClick={() => setDraft({ domain: '', path: '/', name: '', value: '' })}>＋ Add cookie</button>
+        </div>
+      )}
+    </>
+  )
+}
+
 export default function Settings() {
   const { theme, setTheme, client, connected, servers, setServers, activeId, setActiveId } = useStore()
   const [version, setVersion] = useState(null)
@@ -23,18 +85,6 @@ export default function Settings() {
     a.download = 'blackqbit-config.json'
     a.click()
     URL.revokeObjectURL(a.href)
-  }
-
-  const checkForUpdate = async () => {
-    notify(true, 'Checking for update…')
-    try {
-      const reg = await navigator.serviceWorker?.getRegistration()
-      if (reg) {
-        await reg.update()
-        notify(true, reg.waiting || reg.installing ? 'Update found — reloading' : 'Up to date — reloading')
-      }
-    } catch {}
-    setTimeout(() => location.reload(), 500)
   }
 
   const importConfig = async e => {
@@ -77,14 +127,9 @@ export default function Settings() {
         <p className="hint">qBittorrent {version || '…'}</p>
       </>}
 
+      {connected && <CookieManager client={client} notify={notify} />}
+
       {toast && <div className={'toast ' + (toast.ok ? 'ok' : 'error')}>{toast.text}</div>}
-
-      <h3>App</h3>
-      <div className="chiprow">
-        <button className="chip" onClick={checkForUpdate}>⟳ Check for update</button>
-      </div>
-
-      <p className="hint">blackqbit · installable PWA — use your browser's "Add to Home Screen".</p>
     </div>
   )
 }

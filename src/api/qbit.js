@@ -19,7 +19,8 @@ export class QbitClient {
   async req(path, params, opts = {}) {
     const url = `${this.base}/api/v2${path}`
     const ctl = new AbortController()
-    const timer = setTimeout(() => ctl.abort(), this.timeout)
+    const timeoutMs = opts.timeoutMs || this.timeout
+    const timer = setTimeout(() => ctl.abort(), timeoutMs)
     let res
     try {
       if (opts.method === 'GET' || !params) {
@@ -38,7 +39,7 @@ export class QbitClient {
         })
       }
     } catch (e) {
-      if (e.name === 'AbortError') throw new Error(`Request timed out (${this.timeout / 1000}s)`)
+      if (e.name === 'AbortError') throw new Error(`Request timed out (${timeoutMs / 1000}s)`)
       throw e
     } finally {
       clearTimeout(timer)
@@ -74,7 +75,8 @@ export class QbitClient {
   peerLog(last_known_id = -1) { return this.get('/log/peers', { last_known_id }) }
 
   // ---- Sync ----
-  syncMaindata(rid = 0) { return this.get('/sync/maindata', { rid }) }
+  // Full maindata (rid=0) can be a large payload — give it far more than the default timeout.
+  syncMaindata(rid = 0) { return this.req('/sync/maindata', { rid }, { method: 'GET', timeoutMs: 60000 }) }
   syncTorrentPeers(hash, rid = 0) { return this.get('/sync/torrentPeers', { hash, rid }) }
 
   // ---- Transfer ----

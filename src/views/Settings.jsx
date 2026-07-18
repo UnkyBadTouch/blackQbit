@@ -129,10 +129,9 @@ export default function Settings() {
 
       {connected && <CookieManager client={client} notify={notify} />}
 
-      {debugLog.length > 0 && <>
-        <h3>Connection log</h3>
-        <div className="mono" style={{ whiteSpace: 'pre-wrap' }}>{debugLog.join('\n')}</div>
-      </>}
+      <h3>Connection log</h3>
+      <p className="hint">Build {__BUILD__}</p>
+      <div className="mono" style={{ whiteSpace: 'pre-wrap' }}>{debugLog.length ? debugLog.join('\n') : '(no connection attempts yet)'}</div>
 
       {toast && <div className={'toast ' + (toast.ok ? 'ok' : 'error')}>{toast.text}</div>}
     </div>

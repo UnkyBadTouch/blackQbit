@@ -28,10 +28,11 @@ export class QbitClient {
       } else if (params instanceof FormData) {
         res = await fetch(url, { method: 'POST', body: params, credentials: 'include', signal: ctl.signal })
       } else {
+        // Plain string body: CapacitorHttp's patched fetch mangles URLSearchParams objects.
         res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams(params),
+          body: new URLSearchParams(params).toString(),
           credentials: 'include',
           signal: ctl.signal
         })

@@ -42,6 +42,9 @@ export function StoreProvider({ children }) {
       if (!haveSession && active.username) {
         const r = await client.login(active.username, active.password)
         if (r === 'Fails.') throw new Error('Login failed — check credentials')
+        // Confirm the session cookie actually took before declaring connected,
+        // otherwise a cookie problem turns into an endless connect/fail loop.
+        await client.version().catch(() => { throw new Error('Logged in but session not accepted — cookie problem') })
       }
       ridRef.current = 0
       setTorrents({}); setCategories({}); setTags([]); setServerState({}); setLoaded(false)
@@ -108,9 +111,9 @@ export function StoreProvider({ children }) {
         }
         setLoaded(true)
       } catch (e) {
-        // Session expired (qBittorrent 403s after restart/timeout): try one reconnect,
-        // which re-logins and restarts this loop on success.
-        if (!stop) { setConnected(false); setConnError(e.message); connect() }
+        // Session expired (qBittorrent 403s after restart/timeout): reconnect after a
+        // short delay — immediate retries flap forever when the session never sticks.
+        if (!stop) { setConnected(false); setConnError(e.message); setTimeout(connect, 3000) }
       }
     }
     tick()

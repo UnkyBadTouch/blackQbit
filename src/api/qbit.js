@@ -1,4 +1,4 @@
-import { CapacitorCookies } from '@capacitor/core'
+import { CapacitorHttp } from '@capacitor/core'
 
 // Full qBittorrent WebUI API v2 client. Cookie auth (SID), form-encoded requests.
 export class QbitClient {
@@ -24,7 +24,34 @@ export class QbitClient {
     }
   }
 
+  // Native path: call the CapacitorHttp plugin directly. The patched fetch is unusable for
+  // cookie auth — its Response object filters Set-Cookie (forbidden response header), and the
+  // plugin's cookie jar isn't readable via CapacitorCookies. Raw plugin results expose all headers.
+  async nativeReq(path, params, opts) {
+    const timeoutMs = opts.timeoutMs || this.timeout
+    const isGet = opts.method === 'GET' || !params
+    const url = `${this.base}/api/v2${path}` + (isGet && params ? '?' + new URLSearchParams(params) : '')
+    const headers = this.cookie ? { Cookie: this.cookie } : {}
+    if (!isGet) headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    const res = await CapacitorHttp.request({
+      url,
+      method: isGet ? 'GET' : 'POST',
+      headers,
+      data: isGet ? undefined : new URLSearchParams(params).toString(),
+      connectTimeout: Math.min(timeoutMs, 15000),
+      readTimeout: timeoutMs,
+      responseType: 'text'
+    })
+    const setCookie = Object.entries(res.headers || {}).find(([k]) => k.toLowerCase() === 'set-cookie')?.[1]
+    if (setCookie) this.storeCookie(String(setCookie).split(';')[0].trim())
+    if (res.status === 403 || res.status === 401) throw new Error('Forbidden — session expired or IP banned')
+    if (res.status < 200 || res.status >= 300) throw new Error(`${path}: HTTP ${res.status} ${res.data}`)
+    if (typeof res.data !== 'string') return res.data
+    try { return JSON.parse(res.data) } catch { return res.data }
+  }
+
   async req(path, params, opts = {}) {
+    if (this.native && !(params instanceof FormData)) return this.nativeReq(path, params, opts)
     const url = `${this.base}/api/v2${path}`
     const ctl = new AbortController()
     const timeoutMs = opts.timeoutMs || this.timeout
@@ -74,17 +101,7 @@ export class QbitClient {
 
   async login(username, password) {
     if (this.native) { this.cookie = null; localStorage.removeItem(this.cookieKey) }
-    const r = await this.post('/auth/login', { username, password })
-    // Native: the session cookie lands in the native jar but CapacitorHttp doesn't reliably
-    // replay it, and set-cookie may be filtered from fetch responses — read the jar directly.
-    if (this.native && !this.cookie) {
-      try {
-        const jar = await CapacitorCookies.getCookies({ url: this.base })
-        const entries = Object.entries(jar?.cookies || jar || {}).filter(([, v]) => typeof v === 'string' && v)
-        if (entries.length) this.storeCookie(entries.map(([k, v]) => `${k}=${v}`).join('; '))
-      } catch { /* jar unavailable — header capture in req() is the only hope */ }
-    }
-    return r
+    return this.post('/auth/login', { username, password })
   }
   logout() { return this.post('/auth/logout') }
 

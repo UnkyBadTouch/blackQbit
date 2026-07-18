@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { QbitClient } from './api/qbit.js'
+import { requestNotifPermission, showNotification } from './notify.js'
+
+// A torrent is "complete" once it reaches any seeding/finished state.
+const isDone = (s) => !!s && (/UP$/.test(s) || s === 'uploading')
 
 const Ctx = createContext(null)
 export const useStore = () => useContext(Ctx)
@@ -15,6 +19,11 @@ export function StoreProvider({ children }) {
   const [connError, setConnError] = useState(null)
 
   // sync/maindata state
+  const [notifPrefs, setNotifPrefsState] = useState(() => load('notifPrefs', { complete: true, added: false }))
+  const setNotifPrefs = (p) => { setNotifPrefsState(p); save('notifPrefs', p); if (p.complete || p.added) requestNotifPermission() }
+  const notifPrefsRef = useRef(notifPrefs)
+  notifPrefsRef.current = notifPrefs
+
   const [debugLog, setDebugLog] = useState([])
   const logDbg = (msg) => setDebugLog((l) => [...l.slice(-19), `${new Date().toTimeString().slice(0, 8)} ${msg}`])
 
@@ -24,6 +33,8 @@ export function StoreProvider({ children }) {
   const [serverState, setServerState] = useState({})
   const [loaded, setLoaded] = useState(false) // first maindata received
   const ridRef = useRef(0)
+  const torrentsRef = useRef({})
+  useEffect(() => { torrentsRef.current = torrents }, [torrents])
 
   useEffect(() => { save('servers', servers) }, [servers])
   useEffect(() => { save('activeServer', activeId) }, [activeId])
@@ -90,6 +101,19 @@ export function StoreProvider({ children }) {
         const d = await client.syncMaindata(ridRef.current)
         if (stop) return
         ridRef.current = d.rid
+        // Notifications from delta transitions (skip the initial full snapshot).
+        if (!d.full_update) {
+          const np = notifPrefsRef.current
+          const prevMap = torrentsRef.current
+          for (const [h, t] of Object.entries(d.torrents || {})) {
+            const prev = prevMap[h]
+            if (!prev) {
+              if (np.added) showNotification(t.name || 'Torrent', 'Download added')
+            } else if (np.complete && t.state && isDone(t.state) && !isDone(prev.state)) {
+              showNotification(prev.name || t.name || 'Torrent', 'Download complete')
+            }
+          }
+        }
         if (d.full_update) {
           setTorrents(d.torrents || {})
           setCategories(d.categories || {})
@@ -132,7 +156,8 @@ export function StoreProvider({ children }) {
     servers, setServers, activeId, setActiveId, active, client,
     connected, connError, connect,
     theme, setTheme,
-    torrents, categories, tags, serverState, loaded, debugLog
+    torrents, categories, tags, serverState, loaded, debugLog,
+    notifPrefs, setNotifPrefs
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

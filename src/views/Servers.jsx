@@ -1,7 +1,5 @@
 import React, { useState } from 'react'
 import { useStore } from '../store.jsx'
-import Prefs from './Prefs.jsx'
-import CatTags from './CatTags.jsx'
 
 const blank = { name: '', url: '', username: '', password: '' }
 
@@ -91,12 +89,6 @@ export default function Servers() {
         </div>
       ))}
       <button className="primary" onClick={() => setEditing({ ...blank })}>＋ Add server</button>
-
-      {connected && <>
-        <CatTags notify={(ok, text) => { setToast({ ok, text }); setTimeout(() => setToast(null), 5000) }} />
-        <h3>{active?.name} preferences</h3>
-        <Prefs notify={(ok, text) => { setToast({ ok, text }); setTimeout(() => setToast(null), 5000) }} />
-      </>}
 
       {toast && <div className={'toast ' + (toast.ok ? 'ok' : 'error')}>{toast.text}</div>}
     </div>

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from '../store.jsx'
+import CatTags from './CatTags.jsx'
+import Prefs from './Prefs.jsx'
 
 // qBittorrent's global cookie jar (/app/cookies) — used when fetching .torrent files
 // and RSS feeds from sites that need a login cookie.
@@ -64,7 +66,8 @@ function CookieManager({ client, notify }) {
 }
 
 export default function Settings() {
-  const { theme, setTheme, client, connected, servers, setServers, activeId, setActiveId, debugLog } = useStore()
+  const { theme, setTheme, client, connected, servers, setServers, activeId, setActiveId, debugLog, notifPrefs, setNotifPrefs } = useStore()
+  const [section, setSection] = useState(null) // 'cattags' | 'prefs' | null
   const [version, setVersion] = useState(null)
   const [toast, setToast] = useState(null)
   const notify = (ok, text) => { setToast({ ok, text }); setTimeout(() => setToast(null), 5000) }
@@ -122,9 +125,26 @@ export default function Settings() {
       </div>
       <p className="hint">Exports servers (including passwords), theme, and torrent filter settings as JSON.</p>
 
+      <h3>Notifications</h3>
+      <label className="row" style={{ gap: 8 }}>
+        <input type="checkbox" checked={notifPrefs.complete} onChange={e => setNotifPrefs({ ...notifPrefs, complete: e.target.checked })} />
+        Download complete
+      </label>
+      <label className="row" style={{ gap: 8 }}>
+        <input type="checkbox" checked={notifPrefs.added} onChange={e => setNotifPrefs({ ...notifPrefs, added: e.target.checked })} />
+        Download added
+      </label>
+      <p className="hint">Fires while the app is open (it polls the server every 2s).</p>
+
       {connected && <>
         <h3>Server</h3>
         <p className="hint">qBittorrent {version || '…'}</p>
+        <div className="chiprow">
+          <button className={'chip' + (section === 'cattags' ? ' on' : '')} onClick={() => setSection(section === 'cattags' ? null : 'cattags')}>Categories & tags</button>
+          <button className={'chip' + (section === 'prefs' ? ' on' : '')} onClick={() => setSection(section === 'prefs' ? null : 'prefs')}>Preferences</button>
+        </div>
+        {section === 'cattags' && <CatTags notify={notify} />}
+        {section === 'prefs' && <Prefs notify={notify} />}
       </>}
 
       {connected && <CookieManager client={client} notify={notify} />}

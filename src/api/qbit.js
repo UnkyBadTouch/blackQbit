@@ -9,7 +9,11 @@ export class QbitClient {
     // In the browser, cross-origin servers are routed through our same-origin proxy (server.js) to avoid CORS.
     // /pi/ = proxy with TLS certificate verification disabled.
     this.native = !!globalThis.Capacitor?.isNativePlatform?.()
-    this.sid = null // manual session fallback: CapacitorHttp doesn't reliably replay stored cookies
+    // Manual session fallback: CapacitorHttp doesn't reliably replay stored cookies.
+    // Cookie name varies (SID, QBT_SID_<port>, …) so keep the whole name=value pair,
+    // persisted so an app restart reuses the session until the server rejects it.
+    this.cookieKey = 'qbitCookie:' + base
+    this.cookie = (this.native && localStorage.getItem(this.cookieKey)) || null
     if (this.native) {
       this.base = base
     } else if (typeof location !== 'undefined' && /^https?:/.test(base) && new URL(base).origin !== location.origin) {
@@ -26,7 +30,7 @@ export class QbitClient {
     const timeoutMs = opts.timeoutMs || this.timeout
     const timer = setTimeout(() => ctl.abort(), timeoutMs)
     // Browsers forbid setting Cookie manually (and manage it themselves); native needs it explicit.
-    const cookie = this.native && this.sid ? { Cookie: `SID=${this.sid}` } : {}
+    const cookie = this.native && this.cookie ? { Cookie: this.cookie } : {}
     let res
     try {
       if (opts.method === 'GET' || !params) {
@@ -51,8 +55,7 @@ export class QbitClient {
       clearTimeout(timer)
     }
     const setCookie = res.headers.get('set-cookie')
-    const sid = setCookie?.match(/SID=([^;]+)/)
-    if (sid) this.sid = sid[1]
+    if (setCookie) this.storeCookie(setCookie.split(';')[0].trim())
     if (res.status === 403) throw new Error('Forbidden — session expired or IP banned')
     if (!res.ok) throw new Error(`${path}: HTTP ${res.status} ${await res.text()}`)
     const text = await res.text()
@@ -63,15 +66,22 @@ export class QbitClient {
   post(path, params) { return this.req(path, params || {}) }
 
   // ---- Authentication ----
+  storeCookie(pair) {
+    if (!pair || !pair.includes('=')) return
+    this.cookie = pair
+    if (this.native) localStorage.setItem(this.cookieKey, pair)
+  }
+
   async login(username, password) {
+    if (this.native) { this.cookie = null; localStorage.removeItem(this.cookieKey) }
     const r = await this.post('/auth/login', { username, password })
-    // Native: the SID cookie lands in the native jar but CapacitorHttp doesn't reliably
+    // Native: the session cookie lands in the native jar but CapacitorHttp doesn't reliably
     // replay it, and set-cookie may be filtered from fetch responses — read the jar directly.
-    if (this.native && !this.sid) {
+    if (this.native && !this.cookie) {
       try {
         const jar = await CapacitorCookies.getCookies({ url: this.base })
-        const sid = jar?.SID || jar?.cookies?.SID
-        if (sid) this.sid = sid
+        const entries = Object.entries(jar?.cookies || jar || {}).filter(([, v]) => typeof v === 'string' && v)
+        if (entries.length) this.storeCookie(entries.map(([k, v]) => `${k}=${v}`).join('; '))
       } catch { /* jar unavailable — header capture in req() is the only hope */ }
     }
     return r

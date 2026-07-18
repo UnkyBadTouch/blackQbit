@@ -45,7 +45,7 @@ export function StoreProvider({ children }) {
         // Confirm the session cookie actually took before declaring connected,
         // otherwise a cookie problem turns into an endless connect/fail loop.
         await client.version().catch((e) => {
-          throw new Error(`Logged in but session not accepted (SID ${client.sid ? 'captured' : 'NOT captured'}; ${e.message})`)
+          throw new Error(`Logged in but session not accepted (cookie ${client.cookie ? 'captured' : 'NOT captured'}; ${e.message})`)
         })
       }
       ridRef.current = 0

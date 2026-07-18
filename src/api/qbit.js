@@ -6,7 +6,9 @@ export class QbitClient {
     // Native APK (CapacitorHttp) has no CORS — talk to the server directly.
     // In the browser, cross-origin servers are routed through our same-origin proxy (server.js) to avoid CORS.
     // /pi/ = proxy with TLS certificate verification disabled.
-    if (globalThis.Capacitor?.isNativePlatform?.()) {
+    this.native = !!globalThis.Capacitor?.isNativePlatform?.()
+    this.sid = null // manual session fallback: CapacitorHttp doesn't reliably replay stored cookies
+    if (this.native) {
       this.base = base
     } else if (typeof location !== 'undefined' && /^https?:/.test(base) && new URL(base).origin !== location.origin) {
       const b64 = btoa(base).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -21,18 +23,20 @@ export class QbitClient {
     const ctl = new AbortController()
     const timeoutMs = opts.timeoutMs || this.timeout
     const timer = setTimeout(() => ctl.abort(), timeoutMs)
+    // Browsers forbid setting Cookie manually (and manage it themselves); native needs it explicit.
+    const cookie = this.native && this.sid ? { Cookie: `SID=${this.sid}` } : {}
     let res
     try {
       if (opts.method === 'GET' || !params) {
         const qs = params ? '?' + new URLSearchParams(params) : ''
-        res = await fetch(url + qs, { credentials: 'include', signal: ctl.signal })
+        res = await fetch(url + qs, { headers: { ...cookie }, credentials: 'include', signal: ctl.signal })
       } else if (params instanceof FormData) {
-        res = await fetch(url, { method: 'POST', body: params, credentials: 'include', signal: ctl.signal })
+        res = await fetch(url, { method: 'POST', body: params, headers: { ...cookie }, credentials: 'include', signal: ctl.signal })
       } else {
         // Plain string body: CapacitorHttp's patched fetch mangles URLSearchParams objects.
         res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...cookie },
           body: new URLSearchParams(params).toString(),
           credentials: 'include',
           signal: ctl.signal
@@ -44,6 +48,9 @@ export class QbitClient {
     } finally {
       clearTimeout(timer)
     }
+    const setCookie = res.headers.get('set-cookie')
+    const sid = setCookie?.match(/SID=([^;]+)/)
+    if (sid) this.sid = sid[1]
     if (res.status === 403) throw new Error('Forbidden — session expired or IP banned')
     if (!res.ok) throw new Error(`${path}: HTTP ${res.status} ${await res.text()}`)
     const text = await res.text()

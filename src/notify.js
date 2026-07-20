@@ -1,6 +1,30 @@
 import { LocalNotifications } from '@capacitor/local-notifications'
+import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service'
 
 const native = !!globalThis.Capacitor?.isNativePlatform?.()
+
+// Keep the app process alive while torrents download so background polling/notifications work.
+let fgsRunning = false
+export async function setForegroundService(on) {
+  if (!native || on === fgsRunning) return
+  fgsRunning = on
+  try {
+    if (on) {
+      await ForegroundService.startForegroundService({
+        id: 1000,
+        title: 'blackQbit',
+        body: 'Monitoring downloads',
+        smallIcon: 'ic_stat_notify',
+        silent: true,
+        serviceType: 1 // FOREGROUND_SERVICE_TYPE_DATA_SYNC
+      })
+    } else {
+      await ForegroundService.stopForegroundService()
+    }
+  } catch {
+    fgsRunning = !on
+  }
+}
 
 export async function requestNotifPermission() {
   try {

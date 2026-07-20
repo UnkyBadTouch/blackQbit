@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { QbitClient } from './api/qbit.js'
-import { requestNotifPermission, showNotification } from './notify.js'
+import { requestNotifPermission, showNotification, setForegroundService } from './notify.js'
 
 // A torrent is "complete" once it reaches any seeding/finished state.
 const isDone = (s) => !!s && (/UP$/.test(s) || s === 'uploading')
@@ -151,6 +151,12 @@ export function StoreProvider({ children }) {
     const iv = setInterval(tick, 2000)
     return () => { stop = true; clearInterval(iv) }
   }, [connected, client, connect])
+
+  // Foreground service while anything is actively downloading (states: downloading, *DL).
+  useEffect(() => {
+    const downloading = Object.values(torrents).some(t => t.state === 'downloading' || /DL$/.test(t.state || ''))
+    setForegroundService(downloading)
+  }, [torrents])
 
   const value = {
     servers, setServers, activeId, setActiveId, active, client,

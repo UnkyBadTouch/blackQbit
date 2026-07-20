@@ -150,7 +150,7 @@ export default function Settings() {
       {connected && <CookieManager client={client} notify={notify} />}
 
       <h3>Connection log</h3>
-      <p className="hint">Build {__BUILD__}</p>
+      <p className="hint">blackQbit v{__APP_VERSION__} · built {__BUILD__}</p>
       <div className="mono" style={{ whiteSpace: 'pre-wrap' }}>{debugLog.length ? debugLog.join('\n') : '(no connection attempts yet)'}</div>
 
       {toast && <div className={'toast ' + (toast.ok ? 'ok' : 'error')}>{toast.text}</div>}

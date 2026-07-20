@@ -231,7 +231,7 @@ export default function Rss() {
         {selectedFeed && (
           <div className="articles">
             <h3>{selected.split(SEP).at(-1)}</h3>
-            {(selectedFeed.articles || []).map(a => (
+            {[...(selectedFeed.articles || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).map(a => (
               <div key={a.id} className={'filerow' + (a.isRead ? ' read' : '')}>
                 <div>
                   <div className="tname">{a.title}</div>

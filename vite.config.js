@@ -4,7 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   base: process.env.CAP_BUILD ? './' : '/qbit/',
-  define: { __BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')) },
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' '))
+  },
   plugins: [
     react(),
     VitePWA({

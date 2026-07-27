@@ -28,7 +28,7 @@ export default function Search() {
   useEffect(() => { if (connected) loadPlugins() }, [connected])
   useEffect(() => () => clearInterval(pollRef.current), [])
 
-  if (!connected) return <div className="empty">Not connected.</div>
+  if (!connected && !pluginsLoaded) return <div className="empty">Not connected.</div>
   if (!pluginsLoaded) return <div className="empty"><span className="spinner" /> Loading…</div>
 
   const startSearch = async e => {
@@ -72,6 +72,7 @@ export default function Search() {
 
   return (
     <div className="search">
+      {!connected && <div className="banner error">Reconnecting…</div>}
       <div className="chiprow tabs">
         <button className={'chip' + (view === 'search' ? ' on' : '')} onClick={() => setView('search')}>Search</button>
         <button className={'chip' + (view === 'plugins' ? ' on' : '')} onClick={() => setView('plugins')}>Plugins ({enabledCount}/{plugins.length})</button>
@@ -102,6 +103,7 @@ export default function Search() {
         <div className="list actionsrow">
           {running && <div className="empty"><span className="spinner" /> Searching… {results.length} results</div>}
           {!running && searchId != null && results.length === 0 && <div className="empty">No results.</div>}
+          {!running && searchId != null && results.length > 0 && <div className="hint">{results.length} result{results.length === 1 ? '' : 's'}</div>}
           {[...results].sort((a, b) => (b.nbSeeders || 0) - (a.nbSeeders || 0)).map(r => (
             <div key={r.fileUrl} className="filerow">
               <div>

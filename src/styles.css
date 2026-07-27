@@ -38,6 +38,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   outline: 2px solid var(--acc); outline-offset: 1px;
 }
 button { cursor: pointer; font-weight: 550; }
+.search-box { position: relative; display: flex; flex: 1; }
+.search-box input { width: 100%; padding-right: 30px; }
+.search-box .clear-btn {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; padding: 4px 6px; line-height: 1;
+  color: inherit; opacity: 0.6; cursor: pointer; font-size: 16px;
+}
+.search-box .clear-btn:hover { opacity: 1; }
 button.primary {
   background: linear-gradient(180deg, color-mix(in srgb, var(--acc) 88%, #fff), var(--acc));
   color: var(--acc-ink);
@@ -83,6 +91,7 @@ button.ok { color: var(--seed); }
 }
 .bottomnav button.active { color: var(--acc); border-top-color: var(--acc); }
 .bottomnav .icon { font-size: 17px; line-height: 1; filter: grayscale(35%); }
+.bottomnav .icon-plus { filter: none; color: var(--seed); }
 .bottomnav button.active .icon { filter: none; }
 
 .banner { padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; }
@@ -105,6 +114,7 @@ button.ok { color: var(--seed); }
 
 .filters { margin-bottom: 12px; display: flex; flex-direction: column; gap: 7px; }
 .chiprow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.chiprow + .chiprow { border-top: 1px solid var(--line); padding-top: 7px; }
 .chip {
   padding: 5px 12px; border-radius: 7px; font-size: 13px;
   background: var(--surface); border: 1px solid var(--line); color: var(--dim);
@@ -222,7 +232,7 @@ button.ok { color: var(--seed); }
 }
 .sheet {
   background: var(--bg); width: 100%; max-width: 720px; max-height: 88dvh;
-  border-radius: 18px 18px 0 0; padding: 16px 14px;
+  border-radius: 18px 18px 0 0; padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 10px;
   border-top: 1px solid var(--line);
 }
@@ -230,6 +240,7 @@ button.ok { color: var(--seed); }
 .sheet-head .tname { flex: 1; }
 .sheet-body { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .tabs { border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.tabs + .form:not(.actionsrow) { padding-top: 12px; }
 
 .kv div { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .kv b { min-width: 110px; color: var(--dim); font-weight: 500; }

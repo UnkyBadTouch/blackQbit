@@ -11,6 +11,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // Native APK ships assets locally already — a service worker there is pure stale-cache
+      // risk (surfaced as "reinstalling never picks up the new version") with zero benefit.
+      injectRegister: process.env.CAP_BUILD ? false : 'auto',
       registerType: 'autoUpdate',
       manifest: {
         id: 'blackqbit',

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useStore } from '../store.jsx'
 
 export default function AddTorrent() {
-  const { client, connected, categories, tags } = useStore()
+  const { client, connected, categories, tags, setForegroundService } = useStore()
   const [urls, setUrls] = useState('')
   const [files, setFiles] = useState([])
   const [category, setCategory] = useState('')
@@ -28,6 +28,7 @@ export default function AddTorrent() {
     try {
       const r = await client.addTorrent(fd)
       if (r === 'Fails.') throw new Error('qBittorrent rejected the torrent')
+      if (!paused) setForegroundService(true)
       setMsg({ ok: true, text: 'Added ✓' })
       setUrls(''); setFiles([])
     } catch (err) {

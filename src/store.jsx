@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { QbitClient } from './api/qbit.js'
-import { requestNotifPermission, showNotification, setForegroundService } from './notify.js'
+import { requestNotifPermission, showNotification, setForegroundService, pushBgConfig } from './notify.js'
 
 // A torrent is "complete" once it reaches any seeding/finished state.
 const isDone = (s) => !!s && (/UP$/.test(s) || s === 'uploading')
@@ -20,9 +20,14 @@ export function StoreProvider({ children }) {
 
   // sync/maindata state
   const [notifPrefs, setNotifPrefsState] = useState(() => load('notifPrefs', { complete: true, added: false }))
-  const setNotifPrefs = (p) => { setNotifPrefsState(p); save('notifPrefs', p); if (p.complete || p.added) requestNotifPermission() }
+  const setNotifPrefs = (p) => {
+    setNotifPrefsState(p); save('notifPrefs', p)
+    if (p.complete || p.added) requestNotifPermission()
+    if (client) pushBgConfig({ serverUrl: client.base, cookie: client.cookie, notifComplete: p.complete })
+  }
   const notifPrefsRef = useRef(notifPrefs)
   notifPrefsRef.current = notifPrefs
+  useEffect(() => { if (notifPrefs.complete || notifPrefs.added) requestNotifPermission() }, [])
 
   const [debugLog, setDebugLog] = useState([])
   const logDbg = (msg) => setDebugLog((l) => [...l.slice(-19), `${new Date().toTimeString().slice(0, 8)} ${msg}`])
@@ -64,16 +69,22 @@ export function StoreProvider({ children }) {
         })
         logDbg('post-login verify ok')
       }
+      // Keep cached torrents on screen across a reconnect; only a fresh profile
+      // switch (handled by the effect below) should clear them.
       ridRef.current = 0
-      setTorrents({}); setCategories({}); setTags([]); setServerState({}); setLoaded(false)
       setConnected(true)
+      pushBgConfig({ serverUrl: client.base, cookie: client.cookie, notifComplete: notifPrefsRef.current.complete })
     } catch (e) {
       setConnected(false)
       setConnError(e.message)
     }
   }, [client, activeId])
 
-  useEffect(() => { setConnected(false); if (client) connect() }, [client])
+  useEffect(() => {
+    setConnected(false)
+    setTorrents({}); setCategories({}); setTags([]); setServerState({}); setLoaded(false)
+    if (client) connect()
+  }, [client])
 
   // Reconnect automatically when the app comes back to the foreground.
   const connectedRef = useRef(false)
@@ -101,10 +112,12 @@ export function StoreProvider({ children }) {
         const d = await client.syncMaindata(ridRef.current)
         if (stop) return
         ridRef.current = d.rid
-        // Notifications from delta transitions (skip the initial full snapshot).
-        if (!d.full_update) {
+        // Diff against cached state to catch transitions — including ones that happened
+        // while the app was backgrounded and a reconnect forced a fresh full snapshot.
+        // Only the very first load (no prior cache) has nothing to diff against.
+        const prevMap = torrentsRef.current
+        if (!d.full_update || Object.keys(prevMap).length > 0) {
           const np = notifPrefsRef.current
-          const prevMap = torrentsRef.current
           for (const [h, t] of Object.entries(d.torrents || {})) {
             const prev = prevMap[h]
             if (!prev) {
@@ -161,7 +174,7 @@ export function StoreProvider({ children }) {
   const value = {
     servers, setServers, activeId, setActiveId, active, client,
     connected, connError, connect,
-    theme, setTheme,
+    theme, setTheme, setForegroundService,
     torrents, categories, tags, serverState, loaded, debugLog,
     notifPrefs, setNotifPrefs
   }

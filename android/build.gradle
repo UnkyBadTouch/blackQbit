@@ -22,6 +22,12 @@ allprojects {
         google()
         mavenCentral()
     }
+    // JDK 25 confuses Kotlin's auto-detected jvmTarget (falls back to 24) while javac
+    // modules stay pinned at 21 (e.g. background-runner) — force both in step. Matched by
+    // name (not type) so this doesn't need the Kotlin plugin on the root buildscript classpath.
+    tasks.matching { it.name.contains("Kotlin") }.configureEach {
+        if (it.hasProperty("kotlinOptions")) it.kotlinOptions.jvmTarget = "21"
+    }
 }
 
 task clean(type: Delete) {

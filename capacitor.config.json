@@ -15,6 +15,14 @@
     },
     "CapacitorCookies": {
       "enabled": true
+    },
+    "BackgroundRunner": {
+      "label": "net.blackout.blackqbit.check",
+      "src": "qbit-runner.js",
+      "event": "check",
+      "repeat": true,
+      "interval": 15,
+      "autoStart": true
     }
   }
 }

@@ -57,6 +57,23 @@ export default function Torrents() {
   const [bulkPicker, setBulkPicker] = useState(null) // 'category' | 'tags' | null
   const [tagMode, setTagMode] = useState('add')      // 'add' | 'remove'
 
+  const counts = useMemo(() => {
+    const all = Object.values(torrents)
+    const status = {}
+    STATUS_FILTERS.forEach(f => { status[f] = all.filter(t => matchesStatus(t, f)).length })
+    const category = { '': 0 }
+    Object.keys(categories).forEach(c => { category[c] = 0 })
+    all.forEach(t => { const c = t.category || ''; category[c] = (category[c] || 0) + 1 })
+    const tag = { '': 0 }
+    tags.forEach(t => { tag[t] = 0 })
+    all.forEach(t => {
+      const tt = (t.tags || '').split(',').map(x => x.trim()).filter(Boolean)
+      if (tt.length === 0) tag[''] += 1
+      else tt.forEach(x => { tag[x] = (tag[x] || 0) + 1 })
+    })
+    return { status, category, tag, total: all.length }
+  }, [torrents, categories, tags])
+
   const list = useMemo(() => {
     return Object.entries(torrents)
       .map(([hash, t]) => ({ hash, ...t }))
@@ -83,13 +100,17 @@ export default function Torrents() {
   const selHashes = () => [...selected].join('|')
   const act = async fn => { await fn(); setSelected(new Set()) }
 
-  if (!connected) return <div className="empty">Not connected.</div>
+  if (!connected && !loaded) return <div className="empty">Not connected.</div>
   if (!loaded) return <div className="empty"><span className="spinner" /> Loading…</div>
 
   return (
     <div className="torrents">
+      {!connected && <div className="banner error">Reconnecting…</div>}
       <div className="toolbar">
-        <input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="search-box">
+          <input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} />
+          {search && <button className="clear-btn" onClick={() => setSearch('')} aria-label="Clear search">×</button>}
+        </div>
         <button className={showFilters ? 'primary' : ''} onClick={() => setShowFilters(v => !v)}>Filter</button>
       </div>
 
@@ -97,21 +118,25 @@ export default function Torrents() {
         <div className="filters">
           <div className="chiprow">
             {STATUS_FILTERS.map(f => (
-              <button key={f} className={'chip' + (status === f ? ' on' : '')} onClick={() => setStatus(f)}>{f}</button>
+              <button key={f} className={'chip' + (status === f ? ' on' : '')} onClick={() => setStatus(f)}>{f}{counts.status[f] ? ` (${counts.status[f]})` : ''}</button>
             ))}
           </div>
           <div className="chiprow">
-            <button className={'chip' + (category === null ? ' on' : '')} onClick={() => setCategory(null)}>any category</button>
-            <button className={'chip' + (category === '' ? ' on' : '')} onClick={() => setCategory('')}>uncategorized</button>
-            {Object.keys(categories).map(c => (
-              <button key={c} className={'chip' + (category === c ? ' on' : '')} onClick={() => setCategory(c)}>{c}</button>
+            <button className={'chip' + (category === null ? ' on' : '')} onClick={() => setCategory(null)}>any category{counts.total ? ` (${counts.total})` : ''}</button>
+            {counts.category[''] > 0 && (
+              <button className={'chip' + (category === '' ? ' on' : '')} onClick={() => setCategory('')}>uncategorized ({counts.category['']})</button>
+            )}
+            {Object.keys(categories).filter(c => counts.category[c] > 0).map(c => (
+              <button key={c} className={'chip' + (category === c ? ' on' : '')} onClick={() => setCategory(c)}>{c} ({counts.category[c]})</button>
             ))}
           </div>
           <div className="chiprow">
-            <button className={'chip' + (tag === null ? ' on' : '')} onClick={() => setTag(null)}>any tag</button>
-            <button className={'chip' + (tag === '' ? ' on' : '')} onClick={() => setTag('')}>untagged</button>
-            {tags.map(t => (
-              <button key={t} className={'chip' + (tag === t ? ' on' : '')} onClick={() => setTag(t)}>{t}</button>
+            <button className={'chip' + (tag === null ? ' on' : '')} onClick={() => setTag(null)}>any tag{counts.total ? ` (${counts.total})` : ''}</button>
+            {counts.tag[''] > 0 && (
+              <button className={'chip' + (tag === '' ? ' on' : '')} onClick={() => setTag('')}>untagged ({counts.tag['']})</button>
+            )}
+            {tags.filter(t => counts.tag[t] > 0).map(t => (
+              <button key={t} className={'chip' + (tag === t ? ' on' : '')} onClick={() => setTag(t)}>{t} ({counts.tag[t]})</button>
             ))}
           </div>
           <div className="chiprow">

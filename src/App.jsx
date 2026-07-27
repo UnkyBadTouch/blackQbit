@@ -9,11 +9,11 @@ import Rss from './views/Rss.jsx'
 import Search from './views/Search.jsx'
 
 const TABS = [
-  { id: 'torrents', label: 'Torrents', icon: '📥' },
-  { id: 'add', label: 'Add', icon: '➕' },
+  { id: 'torrents', label: 'Torrents', icon: '⬇️' },
+  { id: 'add', label: 'Add', icon: '➕️', iconClass: 'icon-plus' },
   { id: 'search', label: 'Search', icon: '🔍' },
   { id: 'rss', label: 'RSS', icon: (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
       <rect width="24" height="24" rx="5" fill="#f78422" />
       <circle cx="6.5" cy="17.5" r="2.3" fill="#fff" />
       <path d="M4 10.5a9.5 9.5 0 0 1 9.5 9.5h-3A6.5 6.5 0 0 0 4 13.5Z" fill="#fff" />
@@ -33,12 +33,13 @@ function Shell() {
 
   const view = !active && tab !== 'servers' && tab !== 'settings'
     ? <Servers />
-    : { torrents: <Torrents />, add: <AddTorrent />, search: <Search />, rss: <Rss />, transfer: <Transfer />, servers: <Servers />, settings: <Settings /> }[tab]
+    : { torrents: <Torrents />, add: <AddTorrent />, rss: <Rss />, transfer: <Transfer />, servers: <Servers />, settings: <Settings /> }[tab]
+  const showSearch = active && tab === 'search'
 
   return (
     <div className="shell">
       <header className="topbar">
-        <span className="wordmark">black<b>Q</b>bit</span>
+        <span className="wordmark">black<b>Qbit</b></span>
         {active && (
           <span className="topstatus">
             <span className={'dot' + (connected ? ' live' : '')} />
@@ -55,11 +56,14 @@ function Shell() {
           {connError} <button onClick={connect}>Retry</button>
         </div>
       )}
-      <main className="content">{view}</main>
+      <main className="content">
+        {view}
+        <div style={{ display: showSearch ? 'contents' : 'none' }}><Search /></div>
+      </main>
       <nav className="bottomnav">
         {TABS.map(t => (
           <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
-            <span className="icon">{t.icon}</span>
+            <span className={'icon' + (t.iconClass ? ' ' + t.iconClass : '')}>{t.icon}</span>
             <span>{t.label}</span>
           </button>
         ))}

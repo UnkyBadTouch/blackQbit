@@ -129,10 +129,16 @@ function RuleForm({ rule, name, feeds, onSave, onCancel }) {
   )
 }
 
+const loadCache = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } }
+
 export default function Rss() {
   const { client, connected } = useStore()
-  const [items, setItems] = useState({})
-  const [rules, setRules] = useState({})
+  const [items, setItemsState] = useState(() => loadCache('rssItemsCache', {}))
+  const [rules, setRulesState] = useState(() => loadCache('rssRulesCache', {}))
+  // Cache-then-revalidate: show what we had instantly, only touch state (and re-render) if
+  // the freshly fetched data actually differs from what's cached.
+  const setItems = v => { setItemsState(prev => { const s = JSON.stringify(v); return s === JSON.stringify(prev) ? prev : (localStorage.setItem('rssItemsCache', s), v) }) }
+  const setRules = v => { setRulesState(prev => { const s = JSON.stringify(v); return s === JSON.stringify(prev) ? prev : (localStorage.setItem('rssRulesCache', s), v) }) }
   const [view, setViewState] = useState(() => localStorage.getItem('rssView') === 'rules' ? 'rules' : 'feeds')
   const setView = v => { localStorage.setItem('rssView', v); setViewState(v) }
   const [selected, setSelected] = useState(null) // path of selected feed
@@ -150,7 +156,7 @@ export default function Rss() {
   // sheet: {type:'item', path, feed} | {type:'addFeed'} | {type:'addFolder'} | null
   const [sheet, setSheet] = useState(null)
   const [field, setField] = useState({}) // scratch inputs for the open sheet
-  const [rssLoaded, setRssLoaded] = useState(false)
+  const [rssLoaded, setRssLoaded] = useState(() => Object.keys(loadCache('rssItemsCache', {})).length > 0)
   const [dlState, setDlState] = useState({}) // articleId -> 'ok' | 'fail'
 
   const notify = (ok, text) => { setToast({ ok, text }); setTimeout(() => setToast(null), 5000) }

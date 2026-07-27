@@ -6,7 +6,7 @@ This client was originally made for me, but I thought I'd share. It was vibe cod
 
 The older android clients weren't doing it for me and I needed access to all the v4 and v5 API calls from qBit so I made this
 
-I'm just sharing with the community, please no hate ❤️
+I'm just sharing with the community ❤️
 
 https://github.com/UnkyBadTouch/blackQbit
 

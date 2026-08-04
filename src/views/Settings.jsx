@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useStore } from '../store.jsx'
 
 export default function Settings() {
-  const { theme, setTheme, servers, setServers, activeId, setActiveId, debugLog, notifPrefs, setNotifPrefs } = useStore()
+  const { theme, setTheme, servers, setServers, activeId, setActiveId, debugLog, notifPrefs, setNotifPrefs, updateCheckPref, setUpdateCheckPref } = useStore()
   const [toast, setToast] = useState(null)
   const notify = (ok, text) => { setToast({ ok, text }); setTimeout(() => setToast(null), 5000) }
 
@@ -78,6 +78,14 @@ export default function Settings() {
         Download added
       </label>
       <p className="hint">Fires while the app is open (it polls the server every 2s).</p>
+
+      <h3>Updates</h3>
+      <div className="chiprow">
+        <button className={'chip' + (updateCheckPref === 'never' ? ' on' : '')} onClick={() => setUpdateCheckPref('never')}>Never</button>
+        <button className={'chip' + (updateCheckPref === 'week' ? ' on' : '')} onClick={() => setUpdateCheckPref('week')}>Every week</button>
+        <button className={'chip' + (updateCheckPref === '2weeks' ? ' on' : '')} onClick={() => setUpdateCheckPref('2weeks')}>Every 2 weeks</button>
+      </div>
+      <p className="hint">Checked once when the app is launched fresh, not each time you switch back in.</p>
 
       <h3>Connection log</h3>
       <p className="hint">blackQbit v{__APP_VERSION__} · built {__BUILD__}</p>

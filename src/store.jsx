@@ -29,6 +29,25 @@ export function StoreProvider({ children }) {
   notifPrefsRef.current = notifPrefs
   useEffect(() => { if (notifPrefs.complete || notifPrefs.added) requestNotifPermission() }, [])
 
+  // Update checking: 'never' (default), 'week', or '2weeks'. Checked once at cold start only.
+  const [updateCheckPref, setUpdateCheckPrefState] = useState(() => load('updateCheckPref', 'never'))
+  const setUpdateCheckPref = (p) => { setUpdateCheckPrefState(p); save('updateCheckPref', p) }
+  const [updateAvailable, setUpdateAvailable] = useState(null) // { version, url } | null
+  useEffect(() => {
+    const intervalMs = { week: 7 * 86400000, '2weeks': 14 * 86400000 }[updateCheckPref]
+    if (!intervalMs) return
+    const last = load('lastUpdateCheck', 0)
+    if (Date.now() - last < intervalMs) return
+    save('lastUpdateCheck', Date.now())
+    fetch('https://api.github.com/repos/UnkyBadTouch/blackQbit/releases/latest')
+      .then(r => r.json())
+      .then(rel => {
+        const latest = (rel.tag_name || '').replace(/^v/, '')
+        if (latest && latest !== __APP_VERSION__) setUpdateAvailable({ version: latest, url: rel.html_url })
+      })
+      .catch(() => {}) // best effort — no network, rate-limited, etc.
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- once per app start, not on tab focus/resume
+
   const [debugLog, setDebugLog] = useState([])
   const logDbg = (msg) => setDebugLog((l) => [...l.slice(-19), `${new Date().toTimeString().slice(0, 8)} ${msg}`])
 
@@ -176,7 +195,8 @@ export function StoreProvider({ children }) {
     connected, connError, connect,
     theme, setTheme, setForegroundService,
     torrents, categories, tags, serverState, loaded, debugLog,
-    notifPrefs, setNotifPrefs
+    notifPrefs, setNotifPrefs,
+    updateCheckPref, setUpdateCheckPref, updateAvailable, dismissUpdate: () => setUpdateAvailable(null)
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

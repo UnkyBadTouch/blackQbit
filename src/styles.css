@@ -97,6 +97,7 @@ button.ok { color: var(--seed); }
 .banner { padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; }
 .banner.error { background: color-mix(in srgb, var(--err) 14%, var(--surface)); color: var(--err); }
 .banner.ok { background: color-mix(in srgb, var(--seed) 14%, var(--surface)); color: var(--seed); }
+.banner.info { background: color-mix(in srgb, var(--acc) 14%, var(--surface)); color: var(--acc); }
 .banner button { margin-left: 8px; padding: 2px 10px; }
 
 .toast {

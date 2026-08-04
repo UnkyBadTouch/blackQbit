@@ -29,7 +29,7 @@ function Shell() {
   const [tab, setTabState] = useState(() =>
     TABS.some(t => t.id === localStorage.getItem('tab')) ? localStorage.getItem('tab') : 'torrents')
   const setTab = id => { localStorage.setItem('tab', id); setTabState(id) }
-  const { active, connected, connError, connect, serverState } = useStore()
+  const { active, connected, connError, connect, serverState, updateAvailable, dismissUpdate } = useStore()
 
   const view = !active && tab !== 'servers' && tab !== 'settings'
     ? <Servers />
@@ -54,6 +54,13 @@ function Shell() {
       {active && !connected && connError && (
         <div className="banner error">
           {connError} <button onClick={connect}>Retry</button>
+        </div>
+      )}
+      {updateAvailable && (
+        <div className="banner info">
+          Update available: v{updateAvailable.version}{' '}
+          <button onClick={() => window.open(updateAvailable.url, '_blank')}>View</button>{' '}
+          <button onClick={dismissUpdate}>Dismiss</button>
         </div>
       )}
       <main className="content">

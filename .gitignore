@@ -1,7 +1,6 @@
 node_modules/
 dist/
 claude.sh
-blackQbit-v*.apk
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 graft/

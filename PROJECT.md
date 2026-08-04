@@ -19,7 +19,8 @@ qBittorrent remote PWA (React + Vite). Mobile-first, bottom nav, dark default.
 - `src/store.jsx` — context: servers/theme in localStorage; polls `/sync/maindata` every 2s with rid deltas; auto-reconnects on visibility/online/focus. Connect reuses existing SID (probes `/app/version`) and only logs in on failure — qBittorrent IP-bans after repeated logins.
 - Views in `src/views/`, one per bottom-nav tab; no router, tab state in App.jsx. Servers tab also hosts the category/tag manager (`CatTags.jsx`) and qBittorrent preferences editor (`Prefs.jsx`).
 - qBittorrent 5.x renamed pause/resume→stop/start: client tries new endpoint, falls back.
-- Persisted localStorage keys: `servers`, `activeServer`, `theme`, `tab`, `torrentPrefs` (filter/sort), `rssView`, `rssEditingRule`, `rssRuleDraft` (rule form survives refresh).
+- Persisted localStorage keys: `servers`, `activeServer`, `theme`, `tab`, `torrentPrefs` (filter/sort), `rssView`, `rssEditingRule`, `rssRuleDraft` (rule form survives refresh), `updateCheckPref` (never/week/2weeks, default never), `lastUpdateCheck` (timestamp).
+- Update check: `StoreProvider` mount effect (`src/store.jsx`) — deliberately `useEffect(..., [])`, not the visibility/online/focus reconnect listeners, so it fires once per cold start, not on every foreground switch. Hits `api.github.com/repos/UnkyBadTouch/blackQbit/releases/latest`, compares tag to `__APP_VERSION__`; shown as a dismissible banner in `App.jsx`.
 
 ## Decisions / constraints (user-set)
 

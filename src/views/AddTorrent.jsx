@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { useStore } from '../store.jsx'
 
 export default function AddTorrent() {
@@ -11,6 +11,7 @@ export default function AddTorrent() {
   const [paused, setPaused] = useState(false)
   const [sequential, setSequential] = useState(false)
   const [msg, setMsg] = useState(null)
+  const fileInput = useRef(null)
 
   if (!connected) return <div className="empty">Not connected.</div>
 
@@ -31,6 +32,7 @@ export default function AddTorrent() {
       if (!paused) setForegroundService(true)
       setMsg({ ok: true, text: 'Added ✓' })
       setUrls(''); setFiles([])
+      if (fileInput.current) fileInput.current.value = ''
     } catch (err) {
       setMsg({ ok: false, text: err.message })
     }
@@ -43,7 +45,7 @@ export default function AddTorrent() {
         <textarea rows={4} value={urls} onChange={e => setUrls(e.target.value)} placeholder="magnet:?xt=…" />
       </label>
       <label>.torrent files
-        <input type="file" accept=".torrent" multiple onChange={e => setFiles([...e.target.files])} />
+        <input ref={fileInput} type="file" accept=".torrent" multiple onChange={e => setFiles([...e.target.files])} />
       </label>
       <label>Save path (optional)
         <input value={savepath} onChange={e => setSavepath(e.target.value)} placeholder="default" />

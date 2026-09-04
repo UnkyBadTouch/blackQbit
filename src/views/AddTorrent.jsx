@@ -2,11 +2,11 @@ import React, { useRef, useState } from 'react'
 import { useStore } from '../store.jsx'
 
 export default function AddTorrent() {
-  const { client, connected, categories, tags, setForegroundService } = useStore()
+  const { client, connected, categories, tags, addDefaults, setForegroundService } = useStore()
   const [urls, setUrls] = useState('')
   const [files, setFiles] = useState([])
-  const [category, setCategory] = useState('')
-  const [tagList, setTagList] = useState('')
+  const [category, setCategory] = useState(addDefaults.category)
+  const [tagList, setTagList] = useState(addDefaults.tags)
   const [savepath, setSavepath] = useState('')
   const [paused, setPaused] = useState(false)
   const [sequential, setSequential] = useState(false)

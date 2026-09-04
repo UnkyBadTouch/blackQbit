@@ -3,7 +3,7 @@ import { ForegroundService } from '@capawesome-team/capacitor-android-foreground
 import { BackgroundRunner } from '@capacitor/background-runner'
 
 const native = !!globalThis.Capacitor?.isNativePlatform?.()
-const BG_LABEL = 'net.blackout.blackqbit.check'
+const BG_LABEL = 'com.pineapplesoftwareinc.qbittorrent.check'
 
 // Fallback for when the WebView's own timers are frozen in the background: pushes the
 // current server/cookie/prefs into the background runner's KV store so its 15-min native
@@ -26,7 +26,7 @@ export async function setForegroundService(on) {
     if (on) {
       await ForegroundService.startForegroundService({
         id: 1000,
-        title: 'blackQbit',
+        title: 'pineappleQbit',
         body: 'Monitoring downloads',
         smallIcon: 'ic_stat_notify',
         silent: true,
@@ -40,16 +40,17 @@ export async function setForegroundService(on) {
   }
 }
 
-// Max importance = heads-up banner that slides down over whatever's on screen, instead of
-// silently landing in the shade. Same channel id used by the background-runner fallback
-// (qbit-runner.js) so both notification paths get the same treatment.
-export const DOWNLOAD_CHANNEL_ID = 'downloads'
+// Default importance = lands quietly in the shade, no heads-up banner or sound. New channel
+// id (Android caches importance per-id forever, so bumping importance alone wouldn't touch
+// existing installs) — same id used by the background-runner fallback (qbit-runner.js) so
+// both notification paths get the same treatment.
+export const DOWNLOAD_CHANNEL_ID = 'downloads_silent'
 
 export async function requestNotifPermission() {
   try {
     if (native) {
       await LocalNotifications.requestPermissions()
-      await LocalNotifications.createChannel({ id: DOWNLOAD_CHANNEL_ID, name: 'Downloads', importance: 5, visibility: 1 })
+      await LocalNotifications.createChannel({ id: DOWNLOAD_CHANNEL_ID, name: 'Downloads', importance: 3, visibility: 1 })
     } else if ('Notification' in window && Notification.permission === 'default') {
       await Notification.requestPermission()
     }
@@ -63,7 +64,7 @@ export async function showNotification(title, body) {
     if (native) {
       await LocalNotifications.schedule({ notifications: [{ id: nextId++ % 100000, title, body, channelId: DOWNLOAD_CHANNEL_ID }] })
     } else if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body })
+      new Notification(title, { body, silent: true })
     }
   } catch { /* best effort */ }
 }

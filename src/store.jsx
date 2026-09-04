@@ -32,20 +32,25 @@ export function StoreProvider({ children }) {
   // Update checking: 'never' (default), 'week', or '2weeks'. Checked once at cold start only.
   const [updateCheckPref, setUpdateCheckPrefState] = useState(() => load('updateCheckPref', 'never'))
   const setUpdateCheckPref = (p) => { setUpdateCheckPrefState(p); save('updateCheckPref', p) }
+  // Defaults prefilled on the Add torrent page: { category, tags } (tags is a comma-separated string).
+  const [addDefaults, setAddDefaultsState] = useState(() => load('addDefaults', { category: '', tags: '' }))
+  const setAddDefaults = (p) => { setAddDefaultsState(p); save('addDefaults', p) }
+
   const [updateAvailable, setUpdateAvailable] = useState(null) // { version, url } | null
+  // Resolves to the newer version string, or null if already up to date. Throws on network/API failure.
+  const checkForUpdate = async () => {
+    save('lastUpdateCheck', Date.now())
+    const rel = await fetch('https://api.github.com/repos/UnkyBadTouch/blackQbit/releases/latest').then(r => r.json())
+    const latest = (rel.tag_name || '').replace(/^v/, '')
+    if (!latest || latest === __APP_VERSION__) return null
+    setUpdateAvailable({ version: latest, url: rel.html_url })
+    return latest
+  }
   useEffect(() => {
     const intervalMs = { week: 7 * 86400000, '2weeks': 14 * 86400000 }[updateCheckPref]
     if (!intervalMs) return
-    const last = load('lastUpdateCheck', 0)
-    if (Date.now() - last < intervalMs) return
-    save('lastUpdateCheck', Date.now())
-    fetch('https://api.github.com/repos/UnkyBadTouch/blackQbit/releases/latest')
-      .then(r => r.json())
-      .then(rel => {
-        const latest = (rel.tag_name || '').replace(/^v/, '')
-        if (latest && latest !== __APP_VERSION__) setUpdateAvailable({ version: latest, url: rel.html_url })
-      })
-      .catch(() => {}) // best effort — no network, rate-limited, etc.
+    if (Date.now() - load('lastUpdateCheck', 0) < intervalMs) return
+    checkForUpdate().catch(() => {}) // best effort — no network, rate-limited, etc.
   }, []) // eslint-disable-line react-hooks/exhaustive-deps -- once per app start, not on tab focus/resume
 
   const [debugLog, setDebugLog] = useState([])
@@ -126,7 +131,13 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     if (!connected || !client) return
     let stop = false
+    // Reentrancy guard: without it, a tick slower than the 2s interval (slow network, large
+    // maindata, weak device) lets ticks pile up — each doing its own JSON parse/diff/setState
+    // — which can saturate the main thread until the UI stops responding to input entirely.
+    let inFlight = false
     const tick = async () => {
+      if (inFlight) return
+      inFlight = true
       try {
         const d = await client.syncMaindata(ridRef.current)
         if (stop) return
@@ -177,6 +188,8 @@ export function StoreProvider({ children }) {
         // Session expired (qBittorrent 403s after restart/timeout): reconnect after a
         // short delay — immediate retries flap forever when the session never sticks.
         if (!stop) { logDbg('sync fail: ' + e.message); setConnected(false); setConnError(e.message); setTimeout(connect, 3000) }
+      } finally {
+        inFlight = false
       }
     }
     tick()
@@ -196,7 +209,8 @@ export function StoreProvider({ children }) {
     theme, setTheme, setForegroundService,
     torrents, categories, tags, serverState, loaded, debugLog,
     notifPrefs, setNotifPrefs,
-    updateCheckPref, setUpdateCheckPref, updateAvailable, dismissUpdate: () => setUpdateAvailable(null)
+    addDefaults, setAddDefaults,
+    updateCheckPref, setUpdateCheckPref, updateAvailable, checkForUpdate, dismissUpdate: () => setUpdateAvailable(null)
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

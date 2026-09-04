@@ -40,7 +40,7 @@ addEventListener('check', (resolve, reject) => {
         for (const hash of prevPending) {
           const t = torrents[hash]
           if (t && isDone(t.state)) {
-            CapacitorNotifications.schedule([{ id: notifyId++, title: t.name || 'Torrent', body: 'Download complete', channelId: 'downloads' }])
+            CapacitorNotifications.schedule([{ id: notifyId++, title: t.name || 'Torrent', body: 'Download complete', channelId: 'downloads_silent' }])
           }
         }
       }

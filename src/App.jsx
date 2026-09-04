@@ -39,7 +39,7 @@ function Shell() {
   return (
     <div className="shell">
       <header className="topbar">
-        <span className="wordmark">black<b>Qbit</b></span>
+        <span className="wordmark">pineapple<b>Qbit</b></span>
         {active && (
           <span className="topstatus">
             <span className={'dot' + (connected ? ' live' : '')} />

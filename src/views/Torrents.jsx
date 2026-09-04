@@ -195,7 +195,16 @@ export default function Torrents() {
       )}
 
       <div className="list">
-        {list.length === 0 && <div className="empty">{Object.keys(torrents).length === 0 ? 'No torrents.' : 'No torrents match the filters.'}</div>}
+        {list.length === 0 && (
+          <div className="empty">
+            {Object.keys(torrents).length === 0 ? 'No torrents.' : (
+              <>
+                No torrents match the filters.{' '}
+                <button className="chip" onClick={() => { setStatus('all'); setCategory(null); setTag(null); setSearch('') }}>Reset filters</button>
+              </>
+            )}
+          </div>
+        )}
         {list.map(t => (
           <div key={t.hash} className={'torrent' + (selected.has(t.hash) ? ' sel' : '')}
             onClick={() => selected.size ? toggle(t.hash) : setDetail(t.hash)}

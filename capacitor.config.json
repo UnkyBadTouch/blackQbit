@@ -1,6 +1,6 @@
 {
-  "appId": "net.blackout.blackqbit",
-  "appName": "blackQbit",
+  "appId": "com.pineapplesoftwareinc.qbittorrent",
+  "appName": "pineappleQbit",
   "webDir": "dist",
   "server": {
     "androidScheme": "http",
@@ -17,7 +17,7 @@
       "enabled": true
     },
     "BackgroundRunner": {
-      "label": "net.blackout.blackqbit.check",
+      "label": "com.pineapplesoftwareinc.qbittorrent.check",
       "src": "qbit-runner.js",
       "event": "check",
       "repeat": true,

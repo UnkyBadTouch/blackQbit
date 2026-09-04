@@ -2,18 +2,30 @@ import React, { useState } from 'react'
 import { useStore } from '../store.jsx'
 
 export default function Settings() {
-  const { theme, setTheme, servers, setServers, activeId, setActiveId, debugLog, notifPrefs, setNotifPrefs, updateCheckPref, setUpdateCheckPref } = useStore()
+  const { theme, setTheme, servers, setServers, activeId, setActiveId, debugLog, notifPrefs, setNotifPrefs, updateCheckPref, setUpdateCheckPref, checkForUpdate, categories, tags, addDefaults, setAddDefaults } = useStore()
   const [toast, setToast] = useState(null)
+  const [checking, setChecking] = useState(false)
   const notify = (ok, text) => { setToast({ ok, text }); setTimeout(() => setToast(null), 5000) }
+
+  const checkNow = async () => {
+    setChecking(true)
+    try {
+      const latest = await checkForUpdate()
+      notify(true, latest ? `v${latest} available` : `Up to date (v${__APP_VERSION__})`)
+    } catch {
+      notify(false, "Couldn't reach GitHub")
+    }
+    setChecking(false)
+  }
 
   const exportConfig = async () => {
     const data = {
-      app: 'blackQbit', version: 1,
+      app: 'pineappleQbit', version: 1,
       servers, activeServer: activeId, theme,
       torrentPrefs: JSON.parse(localStorage.getItem('torrentPrefs') || 'null')
     }
     const json = JSON.stringify(data, null, 2)
-    const filename = 'blackQbit.json'
+    const filename = 'pineappleQbit.json'
     // Android WebView doesn't support the <a download> trick — write to cache and hand off
     // to the native share sheet so the user can pick where to save it.
     if (globalThis.Capacitor?.isNativePlatform?.()) {
@@ -21,7 +33,7 @@ export default function Settings() {
         const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
         const { Share } = await import('@capacitor/share')
         const { uri } = await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 })
-        await Share.share({ title: 'blackQbit config', url: uri, dialogTitle: `Save ${filename}` })
+        await Share.share({ title: 'pineappleQbit config', url: uri, dialogTitle: `Save ${filename}` })
       } catch (e) { notify(false, 'Export failed: ' + e.message) }
       return
     }
@@ -39,7 +51,7 @@ export default function Settings() {
     if (!file) return
     try {
       const data = JSON.parse(await file.text())
-      if (!Array.isArray(data.servers)) throw new Error('Not a blackQbit config file')
+      if (!Array.isArray(data.servers)) throw new Error('Not a pineappleQbit config file')
       setServers(data.servers)
       if (data.servers.some(s => s.id === data.activeServer)) setActiveId(data.activeServer)
       if (data.theme === 'dark' || data.theme === 'light') setTheme(data.theme)
@@ -68,6 +80,20 @@ export default function Settings() {
       </div>
       <p className="hint">Exports servers (including passwords), theme, and torrent filter settings as JSON.</p>
 
+      <h3>Add torrent defaults</h3>
+      <label>Category
+        <select value={addDefaults.category} onChange={e => setAddDefaults({ ...addDefaults, category: e.target.value })}>
+          <option value="">(none)</option>
+          {Object.keys(categories).map(c => <option key={c}>{c}</option>)}
+          {addDefaults.category && !categories[addDefaults.category] && <option>{addDefaults.category}</option>}
+        </select>
+      </label>
+      <label>Tags (comma separated)
+        <input value={addDefaults.tags} onChange={e => setAddDefaults({ ...addDefaults, tags: e.target.value })} list="defaulttaglist" />
+        <datalist id="defaulttaglist">{tags.map(t => <option key={t}>{t}</option>)}</datalist>
+      </label>
+      <p className="hint">Prefilled on the Add torrent page.</p>
+
       <h3>Notifications</h3>
       <label className="row" style={{ gap: 8 }}>
         <input type="checkbox" checked={notifPrefs.complete} onChange={e => setNotifPrefs({ ...notifPrefs, complete: e.target.checked })} />
@@ -84,11 +110,12 @@ export default function Settings() {
         <button className={'chip' + (updateCheckPref === 'never' ? ' on' : '')} onClick={() => setUpdateCheckPref('never')}>Never</button>
         <button className={'chip' + (updateCheckPref === 'week' ? ' on' : '')} onClick={() => setUpdateCheckPref('week')}>Every week</button>
         <button className={'chip' + (updateCheckPref === '2weeks' ? ' on' : '')} onClick={() => setUpdateCheckPref('2weeks')}>Every 2 weeks</button>
+        <button className="chip" disabled={checking} onClick={checkNow}>{checking ? 'Checking…' : 'Check now'}</button>
       </div>
       <p className="hint">Checked once when the app is launched fresh, not each time you switch back in.</p>
 
       <h3>Connection log</h3>
-      <p className="hint">blackQbit v{__APP_VERSION__} · built {__BUILD__}</p>
+      <p className="hint">pineappleQbit v{__APP_VERSION__} · built {__BUILD__}</p>
       <div className="mono" style={{ whiteSpace: 'pre-wrap' }}>{debugLog.length ? debugLog.join('\n') : '(no connection attempts yet)'}</div>
 
       {toast && <div className={'toast ' + (toast.ok ? 'ok' : 'error')}>{toast.text}</div>}

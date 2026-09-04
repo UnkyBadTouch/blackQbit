@@ -1,4 +1,4 @@
-package net.blackout.blackqbit;
+package com.pineapplesoftwareinc.qbittorrent;
 
 import com.getcapacitor.BridgeActivity;
 

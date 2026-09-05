@@ -3,7 +3,7 @@ import { ForegroundService } from '@capawesome-team/capacitor-android-foreground
 import { BackgroundRunner } from '@capacitor/background-runner'
 
 const native = !!globalThis.Capacitor?.isNativePlatform?.()
-const BG_LABEL = 'com.pineapplesoftwareinc.qbittorrent.check'
+const BG_LABEL = 'net.blackout.blackqbit.check'
 
 // Fallback for when the WebView's own timers are frozen in the background: pushes the
 // current server/cookie/prefs into the background runner's KV store so its 15-min native
@@ -26,7 +26,7 @@ export async function setForegroundService(on) {
     if (on) {
       await ForegroundService.startForegroundService({
         id: 1000,
-        title: 'pineappleQbit',
+        title: 'blackQbit',
         body: 'Monitoring downloads',
         smallIcon: 'ic_stat_notify',
         silent: true,

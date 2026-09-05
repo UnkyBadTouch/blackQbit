@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">pineappleQbit</string>
-    <string name="title_activity_main">pineappleQbit</string>
-    <string name="package_name">com.pineapplesoftwareinc.qbittorrent</string>
-    <string name="custom_url_scheme">com.pineapplesoftwareinc.qbittorrent</string>
+    <string name="app_name">blackQbit</string>
+    <string name="title_activity_main">blackQbit</string>
+    <string name="package_name">net.blackout.blackqbit</string>
+    <string name="custom_url_scheme">net.blackout.blackqbit</string>
 </resources>

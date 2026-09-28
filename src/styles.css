@@ -187,6 +187,7 @@ button.ok { color: var(--seed); }
   font-size: 11px; color: var(--ink);
 }
 .badge.tag { background: none; border: 1px solid var(--line); color: var(--dim); }
+.badge.cat { margin-left: auto; }
 
 .empty { color: var(--dim); text-align: center; padding: 44px 0; }
 .spinner {

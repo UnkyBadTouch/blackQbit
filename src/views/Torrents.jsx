@@ -221,7 +221,7 @@ export default function Torrents() {
                 {t.dlspeed > 0 && <span>↓ {fmtSpeed(t.dlspeed)}</span>}
                 {t.upspeed > 0 && <span>↑ {fmtSpeed(t.upspeed)}</span>}
                 {t.progress < 1 && <span>ETA {fmtEta(t.eta)}</span>}
-                {t.category && <span className="badge">{t.category}</span>}
+                {t.category && <span className="badge cat">{t.category}</span>}
                 {(t.tags || '').split(',').filter(x => x.trim()).map(x => <span key={x} className="badge tag">{x.trim()}</span>)}
               </div>
             </div>

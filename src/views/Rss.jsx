@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '../store.jsx'
 
 // qBittorrent separates nested RSS paths with backslashes: "Folder\Sub\Feed"
@@ -153,6 +153,12 @@ export default function Rss() {
     setEditingRuleState(er)
   }
   const [toast, setToast] = useState(null)
+  // Opening the rule editor unmounts the list, which resets .content's scroll — remember it.
+  const savedScroll = useRef(0)
+  const openEditor = er => {
+    savedScroll.current = document.querySelector('.content')?.scrollTop || 0
+    setEditingRule(er)
+  }
   // sheet: {type:'item', path, feed} | {type:'addFeed'} | {type:'addFolder'} | null
   const [sheet, setSheet] = useState(null)
   const [field, setField] = useState({}) // scratch inputs for the open sheet
@@ -175,6 +181,11 @@ export default function Rss() {
     const iv = setInterval(refresh, 10000)
     return () => clearInterval(iv)
   }, [connected, refresh])
+  useEffect(() => {
+    if (editingRule || !savedScroll.current) return
+    const el = document.querySelector('.content')
+    if (el) el.scrollTop = savedScroll.current
+  }, [editingRule])
 
   if (!connected) return <div className="empty">Not connected.</div>
   if (!rssLoaded) return <div className="empty"><span className="spinner" /> Loading…</div>
@@ -271,13 +282,13 @@ export default function Rss() {
 
       {view === 'rules' && <>
         <div className="chiprow actionsrow">
-          <button className="chip on" onClick={() => setEditingRule({ name: '', rule: {} })}>＋ New rule</button>
+          <button className="chip on" onClick={() => openEditor({ name: '', rule: {} })}>＋ New rule</button>
         </div>
         <div className="list">
           {Object.keys(rules).length === 0 && <div className="empty">No rules yet.</div>}
           {Object.entries(rules).map(([name, rule]) => (
             <div key={name} className="serverrow">
-              <div onClick={() => setEditingRule({ name, rule })}>
+              <div onClick={() => openEditor({ name, rule })}>
                 <div className="tname">{rule.enabled === false ? '⏸ ' : ''}{name}</div>
                 <div className="tmeta">
                   {rule.mustContain && <span>contains: {rule.mustContain}</span>}
@@ -285,7 +296,7 @@ export default function Rss() {
                   {(rule.torrentParams?.category || rule.assignedCategory) && <span className="badge">{rule.torrentParams?.category || rule.assignedCategory}</span>}
                 </div>
               </div>
-              <button onClick={() => setEditingRule({ name, rule })}>Edit</button>
+              <button onClick={() => openEditor({ name, rule })}>Edit</button>
               <button className="danger" onClick={async () => {
                 if (!confirm(`Delete rule "${name}"?`)) return
                 try { await client.rssRemoveRule(name); await refresh() } catch (e) { notify(false, e.message) }
